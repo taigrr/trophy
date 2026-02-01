@@ -249,7 +249,7 @@ func readIndices(doc *gltf.Document, accessorIdx int) ([]int, error) {
 }
 
 // readAccessorData reads raw data from a GLTF accessor.
-func readAccessorData(doc *gltf.Document, accessor *gltf.Accessor) (interface{}, error) {
+func readAccessorData(doc *gltf.Document, accessor *gltf.Accessor) (any, error) {
 	if accessor.BufferView == nil {
 		return nil, fmt.Errorf("accessor has no buffer view")
 	}
@@ -283,9 +283,9 @@ func readAccessorData(doc *gltf.Document, accessor *gltf.Accessor) (interface{},
 			stride = 12 // 3 floats * 4 bytes
 		}
 		result := make([][3]float32, count)
-		for i := 0; i < count; i++ {
+		for i := range count {
 			offset := start + i*stride
-			for j := 0; j < 3; j++ {
+			for j := range 3 {
 				result[i][j] = readFloat32(bufData[offset+j*4:])
 			}
 		}
@@ -296,9 +296,9 @@ func readAccessorData(doc *gltf.Document, accessor *gltf.Accessor) (interface{},
 			stride = 8 // 2 floats * 4 bytes
 		}
 		result := make([][2]float32, count)
-		for i := 0; i < count; i++ {
+		for i := range count {
 			offset := start + i*stride
-			for j := 0; j < 2; j++ {
+			for j := range 2 {
 				result[i][j] = readFloat32(bufData[offset+j*4:])
 			}
 		}
@@ -319,20 +319,20 @@ func readAccessorData(doc *gltf.Document, accessor *gltf.Accessor) (interface{},
 		switch accessor.ComponentType {
 		case gltf.ComponentUbyte:
 			result := make([]uint8, count)
-			for i := 0; i < count; i++ {
+			for i := range count {
 				result[i] = bufData[start+i*stride]
 			}
 			return result, nil
 		case gltf.ComponentUshort:
 			result := make([]uint16, count)
-			for i := 0; i < count; i++ {
+			for i := range count {
 				offset := start + i*stride
 				result[i] = uint16(bufData[offset]) | uint16(bufData[offset+1])<<8
 			}
 			return result, nil
 		case gltf.ComponentUint:
 			result := make([]uint32, count)
-			for i := 0; i < count; i++ {
+			for i := range count {
 				offset := start + i*stride
 				result[i] = uint32(bufData[offset]) |
 					uint32(bufData[offset+1])<<8 |

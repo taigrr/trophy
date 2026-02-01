@@ -28,7 +28,7 @@ func NewTerminalRenderer(term *uv.Terminal, width, height int) *TerminalRenderer
 func (r *TerminalRenderer) Render(fb *Framebuffer) {
 	// Each terminal row represents 2 framebuffer rows
 	// We use ▀ (upper half block) with fg=top color and bg=bottom color
-	
+
 	for row := 0; row < r.height; row++ {
 		topY := row * 2
 		botY := topY + 1

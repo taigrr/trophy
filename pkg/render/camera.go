@@ -23,11 +23,11 @@ type Camera struct {
 	Far         float64 // Far clipping plane
 
 	// Cached matrices (computed on demand)
-	viewMatrix       math3d.Mat4
-	projMatrix       math3d.Mat4
-	viewProjMatrix   math3d.Mat4
-	viewDirty        bool
-	projDirty        bool
+	viewMatrix     math3d.Mat4
+	projMatrix     math3d.Mat4
+	viewProjMatrix math3d.Mat4
+	viewDirty      bool
+	projDirty      bool
 }
 
 // NewCamera creates a new camera with default settings.

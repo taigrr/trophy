@@ -48,7 +48,7 @@ func TestBarycentric(t *testing.T) {
 		{"vertex 0", 0, 0, math3d.V3(1, 0, 0)},
 		{"vertex 1", 1, 0, math3d.V3(0, 1, 0)},
 		{"vertex 2", 0, 1, math3d.V3(0, 0, 1)},
-		{"centroid", 1.0 / 3, 1.0 / 3, math3d.V3(1.0 / 3, 1.0 / 3, 1.0 / 3)},
+		{"centroid", 1.0 / 3, 1.0 / 3, math3d.V3(1.0/3, 1.0/3, 1.0/3)},
 	}
 
 	for _, tc := range tests {
@@ -74,9 +74,9 @@ func TestBarycentric(t *testing.T) {
 }
 
 func TestInterpolateColor3(t *testing.T) {
-	c0 := RGB(255, 0, 0)   // Red
-	c1 := RGB(0, 255, 0)   // Green
-	c2 := RGB(0, 0, 255)   // Blue
+	c0 := RGB(255, 0, 0) // Red
+	c1 := RGB(0, 255, 0) // Green
+	c2 := RGB(0, 0, 255) // Blue
 
 	tests := []struct {
 		name     string
@@ -268,8 +268,8 @@ func TestDrawMeshGouraud_SmoothVsFlat(t *testing.T) {
 	flatSum := 0
 	flatCount := 0
 
-	for y := 0; y < 50; y++ {
-		for x := 0; x < 50; x++ {
+	for y := range 50 {
+		for x := range 50 {
 			cg := fbGouraud.GetPixel(x, y)
 			cf := fbFlat.GetPixel(x, y)
 
@@ -402,8 +402,8 @@ func TestDrawMeshTexturedGouraud(t *testing.T) {
 
 	// Create a simple 4x4 checkerboard texture
 	tex := NewTexture(4, 4)
-	for y := 0; y < 4; y++ {
-		for x := 0; x < 4; x++ {
+	for y := range 4 {
+		for x := range 4 {
 			if (x+y)%2 == 0 {
 				tex.SetPixel(x, y, RGB(255, 255, 255))
 			} else {
@@ -514,8 +514,7 @@ func BenchmarkDrawTriangleGouraud(b *testing.B) {
 	}
 	lightDir := math3d.V3(0, 0, 1)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r.ClearDepth()
 		r.DrawTriangleGouraud(tri, lightDir)
 	}
@@ -534,7 +533,7 @@ func BenchmarkDrawMeshGouraud(b *testing.B) {
 		faces: make([][3]int, 100),
 	}
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		base := i * 3
 		mesh.vertices[base] = struct {
 			pos    math3d.Vec3
@@ -559,8 +558,7 @@ func BenchmarkDrawMeshGouraud(b *testing.B) {
 	color := RGB(200, 100, 50)
 	lightDir := math3d.V3(0, 0, 1)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r.ClearDepth()
 		r.DrawMeshGouraud(mesh, transform, color, lightDir)
 	}
@@ -580,8 +578,7 @@ func BenchmarkDrawTriangleGouraudOpt(b *testing.B) {
 	}
 	lightDir := math3d.V3(0, 0, 1)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r.ClearDepth()
 		r.DrawTriangleGouraudOpt(tri, lightDir)
 	}
@@ -601,7 +598,7 @@ func BenchmarkDrawMeshGouraudOpt(b *testing.B) {
 		faces: make([][3]int, 100),
 	}
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		base := i * 3
 		mesh.vertices[base] = struct {
 			pos    math3d.Vec3
@@ -626,8 +623,7 @@ func BenchmarkDrawMeshGouraudOpt(b *testing.B) {
 	color := RGB(200, 100, 50)
 	lightDir := math3d.V3(0, 0, 1)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		r.ClearDepth()
 		r.DrawMeshGouraudOpt(mesh, transform, color, lightDir)
 	}

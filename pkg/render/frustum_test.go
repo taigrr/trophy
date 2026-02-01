@@ -323,8 +323,7 @@ func BenchmarkFrustumIntersectAABB(b *testing.B) {
 	frustum := NewFrustumFromMatrix(proj.Mul(view))
 	box := NewAABB(math3d.V3(-1, -1, -10), math3d.V3(1, 1, -5))
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = frustum.IntersectAABB(box)
 	}
 }
@@ -336,8 +335,7 @@ func BenchmarkFrustumIntersectsSphere(b *testing.B) {
 	center := math3d.V3(0, 0, -10)
 	radius := 2.0
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = frustum.IntersectsSphere(center, radius)
 	}
 }
@@ -347,8 +345,7 @@ func BenchmarkFrustumExtraction(b *testing.B) {
 	view := math3d.LookAt(math3d.V3(0, 10, 20), math3d.V3(0, 0, 0), math3d.V3(0, 1, 0))
 	viewProj := proj.Mul(view)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = NewFrustumFromMatrix(viewProj)
 	}
 }
@@ -357,8 +354,7 @@ func BenchmarkAABBTransform(b *testing.B) {
 	box := NewAABB(math3d.V3(-1, -1, -1), math3d.V3(1, 1, 1))
 	trans := math3d.Translate(math3d.V3(10, 0, 0)).Mul(math3d.RotateY(0.5))
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = box.Transform(trans)
 	}
 }

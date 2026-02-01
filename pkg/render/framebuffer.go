@@ -11,9 +11,9 @@ import (
 // Framebuffer is a 2D array of pixels that can be rendered to the terminal.
 // We use double vertical resolution by using half-block characters (▀▄).
 type Framebuffer struct {
-	Width  int           // Width in "pixels" (same as terminal columns)
-	Height int           // Height in "pixels" (2x terminal rows due to half-blocks)
-	Pixels []color.RGBA  // Row-major pixel data
+	Width  int          // Width in "pixels" (same as terminal columns)
+	Height int          // Height in "pixels" (2x terminal rows due to half-blocks)
+	Pixels []color.RGBA // Row-major pixel data
 }
 
 // NewFramebuffer creates a new framebuffer with the given dimensions.

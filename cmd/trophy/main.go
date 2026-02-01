@@ -2,19 +2,20 @@
 // View OBJ and GLB files in your terminal with full 3D rendering.
 //
 // Controls:
-//   Mouse drag  - Rotate model (yaw/pitch)
-//   Scroll      - Zoom in/out
-//   W/S         - Pitch up/down
-//   A/D         - Yaw left/right
-//   Q/E         - Roll left/right (Q rolls left, E rolls right)
-//   Space       - Apply random impulse
-//   R           - Reset rotation
-//   T           - Toggle texture on/off
-//   X           - Toggle wireframe mode (x-ray)
-//   L           - Light positioning mode (move mouse, click to set, Esc to cancel)
-//   ?           - Toggle HUD overlay (FPS, filename, poly count, mode status)
-//   +/-         - Adjust zoom
-//   Esc         - Quit (or cancel light mode)
+//
+//	Mouse drag  - Rotate model (yaw/pitch)
+//	Scroll      - Zoom in/out
+//	W/S         - Pitch up/down
+//	A/D         - Yaw left/right
+//	Q/E         - Roll left/right (Q rolls left, E rolls right)
+//	Space       - Apply random impulse
+//	R           - Reset rotation
+//	T           - Toggle texture on/off
+//	X           - Toggle wireframe mode (x-ray)
+//	L           - Light positioning mode (move mouse, click to set, Esc to cancel)
+//	?           - Toggle HUD overlay (FPS, filename, poly count, mode status)
+//	+/-         - Adjust zoom
+//	Esc         - Quit (or cancel light mode)
 package main
 
 import (
@@ -80,10 +81,10 @@ func main() {
 
 // RotationAxis tracks position and velocity for one rotation axis with spring decay
 type RotationAxis struct {
-	Position     float64
-	Velocity     float64
-	velSpring    harmonica.Spring
-	velAccel     float64 // internal spring velocity (for animating Velocity toward 0)
+	Position  float64
+	Velocity  float64
+	velSpring harmonica.Spring
+	velAccel  float64 // internal spring velocity (for animating Velocity toward 0)
 }
 
 // NewRotationAxis creates an axis with harmonica spring for smooth velocity decay
@@ -98,7 +99,7 @@ func NewRotationAxis(fps int) RotationAxis {
 func (a *RotationAxis) Update() {
 	// Apply velocity to position
 	a.Position += a.Velocity
-	
+
 	// Use spring to animate velocity toward 0 (smooth deceleration)
 	a.Velocity, a.velAccel = a.velSpring.Update(a.Velocity, a.velAccel, 0)
 }
@@ -220,12 +221,9 @@ func (h *HUD) Render(width, height int, viewState *ViewState) {
 
 	// Light mode always shows its indicator
 	if viewState.LightMode {
-		lightMsg := fmt.Sprintf("%s%s%s ◉ LIGHT MODE - Move mouse to position, click to set, Esc to cancel %s", 
+		lightMsg := fmt.Sprintf("%s%s%s ◉ LIGHT MODE - Move mouse to position, click to set, Esc to cancel %s",
 			bgBlack, bold, fgYellow, reset)
-		lightCol := (width - 60) / 2
-		if lightCol < 1 {
-			lightCol = 1
-		}
+		lightCol := max((width-60)/2, 1)
 		fmt.Print(moveTo(height, lightCol) + lightMsg)
 		return
 	}
@@ -241,18 +239,12 @@ func (h *HUD) Render(width, height int, viewState *ViewState) {
 
 	// Top middle: filename
 	titleStr := fmt.Sprintf("%s%s%s %s %s", bold, bgBlack, fgWhite, h.filename, reset)
-	titleCol := (width - len(h.filename) - 2) / 2
-	if titleCol < 1 {
-		titleCol = 1
-	}
+	titleCol := max((width-len(h.filename)-2)/2, 1)
 	fmt.Print(moveTo(1, titleCol) + titleStr)
 
 	// Top right: polygon count
 	polyStr := fmt.Sprintf("%s%s%s %d polys %s", bgBlack, fgCyan, bold, h.polyCount, reset)
-	polyCol := width - 12
-	if polyCol < 1 {
-		polyCol = 1
-	}
+	polyCol := max(width-12, 1)
 	fmt.Print(moveTo(1, polyCol) + polyStr)
 
 	// Bottom: mode checkboxes and hint
@@ -266,16 +258,13 @@ func (h *HUD) Render(width, height int, viewState *ViewState) {
 	}
 
 	// Bottom: Mode checkboxes and hint
-	modeStr := fmt.Sprintf("%s%s %s Texture  %s X-Ray (wireframe) %s", 
+	modeStr := fmt.Sprintf("%s%s %s Texture  %s X-Ray (wireframe) %s",
 		bgBlack, fgWhite, checkTex, checkWire, reset)
 	fmt.Print(moveTo(height, 1) + modeStr)
 
 	// Light hint (right side of bottom)
 	hint := fmt.Sprintf("%s%s%s L: position light %s", bgBlack, dim, fgYellow, reset)
-	hintCol := width - 18
-	if hintCol < 1 {
-		hintCol = 1
-	}
+	hintCol := max(width-18, 1)
 	fmt.Print(moveTo(height, hintCol) + hint)
 }
 
@@ -532,12 +521,13 @@ func run(modelPath string) error {
 				}
 
 			case uv.MouseWheelEvent:
-				if ev.Button == uv.MouseWheelUp {
+				switch ev.Button {
+				case uv.MouseWheelUp:
 					cameraZ -= 0.5
 					if cameraZ < 1 {
 						cameraZ = 1
 					}
-				} else if ev.Button == uv.MouseWheelDown {
+				case uv.MouseWheelDown:
 					cameraZ += 0.5
 					if cameraZ > 20 {
 						cameraZ = 20

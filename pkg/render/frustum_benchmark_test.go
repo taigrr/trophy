@@ -19,8 +19,7 @@ func BenchmarkFrustumExtract(b *testing.B) {
 	view := math3d.Identity()
 	viewProj := proj.Mul(view)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = ExtractFrustum(viewProj)
 	}
 }
@@ -70,8 +69,7 @@ func BenchmarkTransformAABB(b *testing.B) {
 	}
 	transform := math3d.Translate(math3d.V3(10, 5, -20)).Mul(math3d.RotateY(0.5)).Mul(math3d.ScaleUniform(2))
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = TransformAABB(local, transform)
 	}
 }
@@ -96,7 +94,7 @@ func BenchmarkCullingScenario(b *testing.B) {
 	}
 	objects := make([]object, objectCount)
 
-	for i := 0; i < objectCount; i++ {
+	for i := range objectCount {
 		// Random position: X, Z in [-50, 50], Y in [0, 10]
 		x := rng.Float64()*100 - 50
 		y := rng.Float64() * 10
@@ -184,7 +182,7 @@ func BenchmarkMeshRenderingComparison(b *testing.B) {
 	objectCount := 100
 	transforms := make([]math3d.Mat4, objectCount)
 
-	for i := 0; i < objectCount; i++ {
+	for i := range objectCount {
 		var z float64
 		if i%2 == 0 {
 			// Visible: in front of camera
@@ -236,7 +234,7 @@ type meshVertex struct {
 	uv     math3d.Vec2
 }
 
-func (m *simpleMesh) VertexCount() int  { return len(m.vertices) }
+func (m *simpleMesh) VertexCount() int   { return len(m.vertices) }
 func (m *simpleMesh) TriangleCount() int { return len(m.faces) }
 
 func (m *simpleMesh) GetVertex(i int) (pos, normal math3d.Vec3, uv math3d.Vec2) {

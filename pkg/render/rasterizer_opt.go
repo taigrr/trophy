@@ -1,4 +1,4 @@
-// Optimized rasterization routines using edge function rasterization.
+// Package render provides optimized rasterization routines using edge function rasterization.
 // Uses incremental updates to avoid recomputing barycentric coordinates per pixel.
 package render
 
@@ -32,7 +32,7 @@ func (r *Rasterizer) DrawTriangleGouraudOpt(tri Triangle, lightDir math3d.Vec3) 
 	viewProj := r.camera.ViewProjectionMatrix()
 	normLight := lightDir.Normalize()
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		clipPos := viewProj.MulVec4(math3d.V4FromV3(tri.V[i].Position, 1))
 
 		if clipPos.W > 0 {
@@ -205,7 +205,7 @@ func (r *Rasterizer) DrawTriangleTexturedOpt(tri Triangle, tex *Texture, lightDi
 
 	viewProj := r.camera.ViewProjectionMatrix()
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		clipPos := viewProj.MulVec4(math3d.V4FromV3(tri.V[i].Position, 1))
 
 		if clipPos.W > 0 {
@@ -269,7 +269,7 @@ func (r *Rasterizer) DrawTriangleTexturedOpt(tri Triangle, tex *Texture, lightDi
 
 	// Perspective-correct interpolation: precompute 1/W
 	var invW [3]float64
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if sv[i].W != 0 {
 			invW[i] = 1.0 / sv[i].W
 		}

@@ -40,24 +40,33 @@ func (w *Wireframe) DrawCube(center math3d.Vec3, size float64, color Color) {
 
 	// 8 vertices of the cube
 	vertices := [8]math3d.Vec3{
-		{center.X - half, center.Y - half, center.Z - half}, // 0: bottom-left-back
-		{center.X + half, center.Y - half, center.Z - half}, // 1: bottom-right-back
-		{center.X + half, center.Y + half, center.Z - half}, // 2: top-right-back
-		{center.X - half, center.Y + half, center.Z - half}, // 3: top-left-back
-		{center.X - half, center.Y - half, center.Z + half}, // 4: bottom-left-front
-		{center.X + half, center.Y - half, center.Z + half}, // 5: bottom-right-front
-		{center.X + half, center.Y + half, center.Z + half}, // 6: top-right-front
-		{center.X - half, center.Y + half, center.Z + half}, // 7: top-left-front
+		{X: center.X - half, Y: center.Y - half, Z: center.Z - half}, // 0: bottom-left-back
+		{X: center.X + half, Y: center.Y - half, Z: center.Z - half}, // 1: bottom-right-back
+		{X: center.X + half, Y: center.Y + half, Z: center.Z - half}, // 2: top-right-back
+		{X: center.X - half, Y: center.Y + half, Z: center.Z - half}, // 3: top-left-back
+		{X: center.X - half, Y: center.Y - half, Z: center.Z + half}, // 4: bottom-left-front
+		{X: center.X + half, Y: center.Y - half, Z: center.Z + half}, // 5: bottom-right-front
+		{X: center.X + half, Y: center.Y + half, Z: center.Z + half}, // 6: top-right-front
+		{X: center.X - half, Y: center.Y + half, Z: center.Z + half}, // 7: top-left-front
 	}
 
 	// 12 edges of the cube
 	edges := [][2]int{
 		// Back face
-		{0, 1}, {1, 2}, {2, 3}, {3, 0},
+		{0, 1},
+		{1, 2},
+		{2, 3},
+		{3, 0},
 		// Front face
-		{4, 5}, {5, 6}, {6, 7}, {7, 4},
+		{4, 5},
+		{5, 6},
+		{6, 7},
+		{7, 4},
 		// Connecting edges
-		{0, 4}, {1, 5}, {2, 6}, {3, 7},
+		{0, 4},
+		{1, 5},
+		{2, 6},
+		{3, 7},
 	}
 
 	for _, edge := range edges {
@@ -71,14 +80,14 @@ func (w *Wireframe) DrawTransformedCube(transform math3d.Mat4, size float64, col
 
 	// Local vertices (centered at origin)
 	localVerts := [8]math3d.Vec3{
-		{-half, -half, -half},
-		{half, -half, -half},
-		{half, half, -half},
-		{-half, half, -half},
-		{-half, -half, half},
-		{half, -half, half},
-		{half, half, half},
-		{-half, half, half},
+		{X: -half, Y: -half, Z: -half},
+		{X: half, Y: -half, Z: -half},
+		{X: half, Y: half, Z: -half},
+		{X: -half, Y: half, Z: -half},
+		{X: -half, Y: -half, Z: half},
+		{X: half, Y: -half, Z: half},
+		{X: half, Y: half, Z: half},
+		{X: -half, Y: half, Z: half},
 	}
 
 	// Transform vertices
@@ -89,9 +98,18 @@ func (w *Wireframe) DrawTransformedCube(transform math3d.Mat4, size float64, col
 
 	// 12 edges
 	edges := [][2]int{
-		{0, 1}, {1, 2}, {2, 3}, {3, 0},
-		{4, 5}, {5, 6}, {6, 7}, {7, 4},
-		{0, 4}, {1, 5}, {2, 6}, {3, 7},
+		{0, 1},
+		{1, 2},
+		{2, 3},
+		{3, 0},
+		{4, 5},
+		{5, 6},
+		{6, 7},
+		{7, 4},
+		{0, 4},
+		{1, 5},
+		{2, 6},
+		{3, 7},
 	}
 
 	for _, edge := range edges {

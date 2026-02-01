@@ -15,6 +15,7 @@ func TestGLTFLoaderCreation(t *testing.T) {
 	loader := NewGLTFLoader()
 	if loader == nil {
 		t.Error("NewGLTFLoader returned nil")
+		return
 	}
 	if !loader.CalculateNormals {
 		t.Error("CalculateNormals should default to true")

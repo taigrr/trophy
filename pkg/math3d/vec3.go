@@ -13,7 +13,7 @@ func V3(x, y, z float64) Vec3 {
 	return Vec3{x, y, z}
 }
 
-// Zero returns the zero vector.
+// Zero3 returns the zero vector.
 func Zero3() Vec3 {
 	return Vec3{}
 }

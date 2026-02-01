@@ -22,14 +22,14 @@ type Triangle struct {
 
 // Rasterizer handles software triangle rasterization.
 type Rasterizer struct {
-	camera        *Camera
-	fb            *Framebuffer
-	zbuffer       []float64 // Depth buffer (1D array, row-major)
-	width         int
-	height        int
-	frustum       Frustum // Cached frustum planes
-	frustumDirty  bool    // Whether frustum needs recalculation
-	CullingStats  CullingStats // Statistics for debugging/benchmarking
+	camera       *Camera
+	fb           *Framebuffer
+	zbuffer      []float64 // Depth buffer (1D array, row-major)
+	width        int
+	height       int
+	frustum      Frustum      // Cached frustum planes
+	frustumDirty bool         // Whether frustum needs recalculation
+	CullingStats CullingStats // Statistics for debugging/benchmarking
 }
 
 // CullingStats tracks frustum culling performance.
@@ -52,7 +52,7 @@ func NewRasterizer(camera *Camera, fb *Framebuffer) *Rasterizer {
 	}
 }
 
-// Clear clears the Z-buffer (call before each frame).
+// ClearDepth clears the Z-buffer (call before each frame).
 func (r *Rasterizer) ClearDepth() {
 	// Use copy-doubling for faster clearing
 	n := len(r.zbuffer)
@@ -136,7 +136,7 @@ func (r *Rasterizer) DrawTriangle(tri Triangle) {
 
 	viewProj := r.camera.ViewProjectionMatrix()
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		// Transform to clip space
 		clipPos := viewProj.MulVec4(math3d.V4FromV3(tri.V[i].Position, 1))
 
@@ -226,7 +226,7 @@ func (r *Rasterizer) DrawTriangleTextured(tri Triangle, tex *Texture, lightDir m
 
 	viewProj := r.camera.ViewProjectionMatrix()
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		// Transform to clip space
 		clipPos := viewProj.MulVec4(math3d.V4FromV3(tri.V[i].Position, 1))
 
@@ -281,7 +281,7 @@ func (r *Rasterizer) DrawTriangleTextured(tri Triangle, tex *Texture, lightDir m
 
 	// Precompute perspective-correct interpolation factors (1/w for each vertex)
 	var invW [3]float64
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if sv[i].W != 0 {
 			invW[i] = 1.0 / sv[i].W
 		} else {
@@ -384,14 +384,14 @@ func (r *Rasterizer) DrawCube(center math3d.Vec3, size float64, color Color, lig
 
 	// 8 vertices
 	v := [8]math3d.Vec3{
-		{center.X - h, center.Y - h, center.Z - h}, // 0: left-bottom-back
-		{center.X + h, center.Y - h, center.Z - h}, // 1: right-bottom-back
-		{center.X + h, center.Y + h, center.Z - h}, // 2: right-top-back
-		{center.X - h, center.Y + h, center.Z - h}, // 3: left-top-back
-		{center.X - h, center.Y - h, center.Z + h}, // 4: left-bottom-front
-		{center.X + h, center.Y - h, center.Z + h}, // 5: right-bottom-front
-		{center.X + h, center.Y + h, center.Z + h}, // 6: right-top-front
-		{center.X - h, center.Y + h, center.Z + h}, // 7: left-top-front
+		{X: center.X - h, Y: center.Y - h, Z: center.Z - h}, // 0: left-bottom-back
+		{X: center.X + h, Y: center.Y - h, Z: center.Z - h}, // 1: right-bottom-back
+		{X: center.X + h, Y: center.Y + h, Z: center.Z - h}, // 2: right-top-back
+		{X: center.X - h, Y: center.Y + h, Z: center.Z - h}, // 3: left-top-back
+		{X: center.X - h, Y: center.Y - h, Z: center.Z + h}, // 4: left-bottom-front
+		{X: center.X + h, Y: center.Y - h, Z: center.Z + h}, // 5: right-bottom-front
+		{X: center.X + h, Y: center.Y + h, Z: center.Z + h}, // 6: right-top-front
+		{X: center.X - h, Y: center.Y + h, Z: center.Z + h}, // 7: left-top-front
 	}
 
 	// 6 faces (2 triangles each)
@@ -416,8 +416,14 @@ func (r *Rasterizer) DrawTransformedCube(transform math3d.Mat4, size float64, co
 
 	// Local vertices
 	local := [8]math3d.Vec3{
-		{-h, -h, -h}, {h, -h, -h}, {h, h, -h}, {-h, h, -h},
-		{-h, -h, h}, {h, -h, h}, {h, h, h}, {-h, h, h},
+		{X: -h, Y: -h, Z: -h},
+		{X: h, Y: -h, Z: -h},
+		{X: h, Y: h, Z: -h},
+		{X: -h, Y: h, Z: -h},
+		{X: -h, Y: -h, Z: h},
+		{X: h, Y: -h, Z: h},
+		{X: h, Y: h, Z: h},
+		{X: -h, Y: h, Z: h},
 	}
 
 	// Transform vertices
@@ -452,16 +458,22 @@ func (r *Rasterizer) DrawTransformedCubeGouraud(transform math3d.Mat4, size floa
 
 	// Local vertices
 	local := [8]math3d.Vec3{
-		{-h, -h, -h}, {h, -h, -h}, {h, h, -h}, {-h, h, -h}, // back
-		{-h, -h, h}, {h, -h, h}, {h, h, h}, {-h, h, h}, // front
+		{X: -h, Y: -h, Z: -h}, {X: h, Y: -h, Z: -h}, {X: h, Y: h, Z: -h}, {X: -h, Y: h, Z: -h}, // back
+		{X: -h, Y: -h, Z: h}, {X: h, Y: -h, Z: h}, {X: h, Y: h, Z: h}, {X: -h, Y: h, Z: h}, // front
 	}
 
 	// Vertex normals (pointing outward from cube corners, averaged from 3 adjacent faces)
 	// For a cube, each corner touches 3 faces, so normal is diagonal
 	sqrt3 := 1.0 / math.Sqrt(3)
 	vertexNormals := [8]math3d.Vec3{
-		{-sqrt3, -sqrt3, -sqrt3}, {sqrt3, -sqrt3, -sqrt3}, {sqrt3, sqrt3, -sqrt3}, {-sqrt3, sqrt3, -sqrt3},
-		{-sqrt3, -sqrt3, sqrt3}, {sqrt3, -sqrt3, sqrt3}, {sqrt3, sqrt3, sqrt3}, {-sqrt3, sqrt3, sqrt3},
+		{X: -sqrt3, Y: -sqrt3, Z: -sqrt3},
+		{X: sqrt3, Y: -sqrt3, Z: -sqrt3},
+		{X: sqrt3, Y: sqrt3, Z: -sqrt3},
+		{X: -sqrt3, Y: sqrt3, Z: -sqrt3},
+		{X: -sqrt3, Y: -sqrt3, Z: sqrt3},
+		{X: sqrt3, Y: -sqrt3, Z: sqrt3},
+		{X: sqrt3, Y: sqrt3, Z: sqrt3},
+		{X: -sqrt3, Y: sqrt3, Z: sqrt3},
 	}
 
 	// Transform vertices and normals
@@ -511,8 +523,8 @@ func (r *Rasterizer) DrawTexturedCube(transform math3d.Mat4, size float64, tex *
 
 	// Local vertices
 	local := [8]math3d.Vec3{
-		{-h, -h, -h}, {h, -h, -h}, {h, h, -h}, {-h, h, -h}, // back
-		{-h, -h, h}, {h, -h, h}, {h, h, h}, {-h, h, h}, // front
+		{X: -h, Y: -h, Z: -h}, {X: h, Y: -h, Z: -h}, {X: h, Y: h, Z: -h}, {X: -h, Y: h, Z: -h}, // back
+		{X: -h, Y: -h, Z: h}, {X: h, Y: -h, Z: h}, {X: h, Y: h, Z: h}, {X: -h, Y: h, Z: h}, // front
 	}
 
 	// UV coordinates for each corner of a face
@@ -540,12 +552,12 @@ func (r *Rasterizer) DrawTexturedCube(transform math3d.Mat4, size float64, tex *
 
 	// Face normals (local space)
 	normals := []math3d.Vec3{
-		{0, 0, -1},  // Back
-		{0, 0, 1},   // Front
-		{-1, 0, 0},  // Left
-		{1, 0, 0},   // Right
-		{0, 1, 0},   // Top
-		{0, -1, 0},  // Bottom
+		{X: 0, Y: 0, Z: -1}, // Back
+		{X: 0, Y: 0, Z: 1},  // Front
+		{X: -1, Y: 0, Z: 0}, // Left
+		{X: 1, Y: 0, Z: 0},  // Right
+		{X: 0, Y: 1, Z: 0},  // Top
+		{X: 0, Y: -1, Z: 0}, // Bottom
 	}
 
 	for fi, f := range faces {
@@ -619,7 +631,7 @@ func (r *Rasterizer) DrawTriangleGouraud(tri Triangle, lightDir math3d.Vec3) {
 	viewProj := r.camera.ViewProjectionMatrix()
 	normLight := lightDir.Normalize()
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		// Transform to clip space
 		clipPos := viewProj.MulVec4(math3d.V4FromV3(tri.V[i].Position, 1))
 
@@ -720,7 +732,7 @@ func (r *Rasterizer) DrawTriangleTexturedGouraud(tri Triangle, tex *Texture, lig
 	viewProj := r.camera.ViewProjectionMatrix()
 	normLight := lightDir.Normalize()
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		// Transform to clip space
 		clipPos := viewProj.MulVec4(math3d.V4FromV3(tri.V[i].Position, 1))
 
@@ -772,7 +784,7 @@ func (r *Rasterizer) DrawTriangleTexturedGouraud(tri Triangle, tex *Texture, lig
 
 	// Precompute perspective-correct interpolation factors (1/w for each vertex)
 	var invW [3]float64
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if sv[i].W != 0 {
 			invW[i] = 1.0 / sv[i].W
 		} else {
@@ -833,7 +845,7 @@ func (r *Rasterizer) DrawTriangleTexturedGouraud(tri Triangle, tex *Texture, lig
 	}
 }
 
-// MeshVertex is imported from models to avoid circular deps.
+// MeshRenderer is imported from models to avoid circular deps.
 // This interface allows drawing meshes without importing the models package.
 type MeshRenderer interface {
 	VertexCount() int

@@ -146,12 +146,14 @@ func Orthographic(left, right, bottom, top, near, far float64) Mat4 {
 }
 
 // Mul multiplies two matrices: a * b.
+//
+//nolint:st1016 // a*b naming convention is clearer for matrix multiplication
 func (a Mat4) Mul(b Mat4) Mat4 {
 	var m Mat4
-	for col := 0; col < 4; col++ {
-		for row := 0; row < 4; row++ {
+	for col := range 4 {
+		for row := range 4 {
 			var sum float64
-			for k := 0; k < 4; k++ {
+			for k := range 4 {
 				sum += a[row+k*4] * b[k+col*4]
 			}
 			m[row+col*4] = sum

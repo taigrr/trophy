@@ -22,8 +22,8 @@ const (
 type FilterMode int
 
 const (
-	FilterNearest FilterMode = iota // Nearest-neighbor (pixelated)
-	FilterBilinear                  // Bilinear interpolation (smooth)
+	FilterNearest  FilterMode = iota // Nearest-neighbor (pixelated)
+	FilterBilinear                   // Bilinear interpolation (smooth)
 )
 
 // Texture holds a 2D image for texture mapping.
@@ -67,8 +67,8 @@ func LoadTexture(path string) (*Texture, error) {
 
 	tex := NewTexture(width, height)
 
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
+	for y := range height {
+		for x := range width {
 			c := img.At(bounds.Min.X+x, bounds.Min.Y+y)
 			r, g, b, a := c.RGBA()
 			// RGBA returns 16-bit values, scale to 8-bit
@@ -92,8 +92,8 @@ func TextureFromImage(img image.Image) *Texture {
 
 	tex := NewTexture(width, height)
 
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
+	for y := range height {
+		for x := range width {
 			c := img.At(bounds.Min.X+x, bounds.Min.Y+y)
 			r, g, b, a := c.RGBA()
 			// RGBA returns 16-bit values, scale to 8-bit
@@ -112,8 +112,8 @@ func TextureFromImage(img image.Image) *Texture {
 // NewCheckerTexture creates a procedural checkerboard texture.
 func NewCheckerTexture(width, height, checkSize int, c1, c2 Color) *Texture {
 	tex := NewTexture(width, height)
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
+	for y := range height {
+		for x := range width {
 			cx := x / checkSize
 			cy := y / checkSize
 			if (cx+cy)%2 == 0 {
@@ -129,8 +129,8 @@ func NewCheckerTexture(width, height, checkSize int, c1, c2 Color) *Texture {
 // NewGradientTexture creates a horizontal gradient texture.
 func NewGradientTexture(width, height int, left, right Color) *Texture {
 	tex := NewTexture(width, height)
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
+	for y := range height {
+		for x := range width {
 			t := float64(x) / float64(width-1)
 			tex.SetPixel(x, y, lerpColor(left, right, t))
 		}

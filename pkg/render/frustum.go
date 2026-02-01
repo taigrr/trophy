@@ -143,14 +143,14 @@ func (b AABB) Extents() math3d.Vec3 {
 func (b AABB) Transform(m math3d.Mat4) AABB {
 	// Get all 8 corners
 	corners := [8]math3d.Vec3{
-		{b.Min.X, b.Min.Y, b.Min.Z},
-		{b.Max.X, b.Min.Y, b.Min.Z},
-		{b.Min.X, b.Max.Y, b.Min.Z},
-		{b.Max.X, b.Max.Y, b.Min.Z},
-		{b.Min.X, b.Min.Y, b.Max.Z},
-		{b.Max.X, b.Min.Y, b.Max.Z},
-		{b.Min.X, b.Max.Y, b.Max.Z},
-		{b.Max.X, b.Max.Y, b.Max.Z},
+		{X: b.Min.X, Y: b.Min.Y, Z: b.Min.Z},
+		{X: b.Max.X, Y: b.Min.Y, Z: b.Min.Z},
+		{X: b.Min.X, Y: b.Max.Y, Z: b.Min.Z},
+		{X: b.Max.X, Y: b.Max.Y, Z: b.Min.Z},
+		{X: b.Min.X, Y: b.Min.Y, Z: b.Max.Z},
+		{X: b.Max.X, Y: b.Min.Y, Z: b.Max.Z},
+		{X: b.Min.X, Y: b.Max.Y, Z: b.Max.Z},
+		{X: b.Max.X, Y: b.Max.Y, Z: b.Max.Z},
 	}
 
 	// Transform all corners and find new bounds
@@ -174,7 +174,7 @@ func (b AABB) ContainsPoint(p math3d.Vec3) bool {
 		p.Z >= b.Min.Z && p.Z <= b.Max.Z
 }
 
-// IntersectsFrustum tests if the AABB intersects or is inside the frustum.
+// IntersectAABB tests if the AABB intersects or is inside the frustum.
 // Returns true if any part of the AABB is visible.
 // Uses the "positive vertex" optimization for faster rejection.
 func (f Frustum) IntersectAABB(box AABB) bool {
