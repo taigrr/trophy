@@ -2,14 +2,17 @@
 package models
 
 import (
+	"image"
+
 	"github.com/taigrr/trophy/pkg/math3d"
 )
 
-// Mesh represents a 3D mesh with vertices and faces.
+// Mesh represents a 3D mesh with vertices, faces, and materials.
 type Mesh struct {
-	Name     string
-	Vertices []MeshVertex
-	Faces    []Face
+	Name      string
+	Vertices  []MeshVertex
+	Faces     []Face
+	Materials []Material
 
 	// Bounding box (calculated on load)
 	BoundsMin math3d.Vec3
@@ -23,9 +26,20 @@ type MeshVertex struct {
 	UV       math3d.Vec2
 }
 
-// Face represents a triangle face with vertex indices.
+// Face represents a triangle face with vertex indices and material reference.
 type Face struct {
-	V [3]int // Indices into Mesh.Vertices
+	V        [3]int // Indices into Mesh.Vertices
+	Material int    // Index into Mesh.Materials (-1 for no material)
+}
+
+// Material represents a PBR material from GLTF.
+type Material struct {
+	Name       string
+	BaseColor  [4]float64  // RGBA in 0-1 range
+	Metallic   float64     // 0 = dielectric, 1 = metal
+	Roughness  float64     // 0 = smooth, 1 = rough
+	BaseMap    image.Image // Optional base color texture
+	HasTexture bool
 }
 
 // NewMesh creates an empty mesh.
@@ -140,11 +154,13 @@ func (m *Mesh) Clone() *Mesh {
 		Name:      m.Name,
 		Vertices:  make([]MeshVertex, len(m.Vertices)),
 		Faces:     make([]Face, len(m.Faces)),
+		Materials: make([]Material, len(m.Materials)),
 		BoundsMin: m.BoundsMin,
 		BoundsMax: m.BoundsMax,
 	}
 	copy(clone.Vertices, m.Vertices)
 	copy(clone.Faces, m.Faces)
+	copy(clone.Materials, m.Materials)
 	return clone
 }
 
@@ -159,6 +175,26 @@ func (m *Mesh) GetVertex(i int) (pos, normal math3d.Vec3, uv math3d.Vec2) {
 // Implements render.MeshRenderer interface.
 func (m *Mesh) GetFace(i int) [3]int {
 	return m.Faces[i].V
+}
+
+// GetFaceMaterial returns the material index for face i.
+// Returns -1 if no material assigned.
+func (m *Mesh) GetFaceMaterial(i int) int {
+	return m.Faces[i].Material
+}
+
+// GetMaterial returns the material at index i.
+// Returns nil if index is out of bounds or -1.
+func (m *Mesh) GetMaterial(i int) *Material {
+	if i < 0 || i >= len(m.Materials) {
+		return nil
+	}
+	return &m.Materials[i]
+}
+
+// MaterialCount returns the number of materials.
+func (m *Mesh) MaterialCount() int {
+	return len(m.Materials)
 }
 
 // GetBounds returns the axis-aligned bounding box.

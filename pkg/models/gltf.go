@@ -44,6 +44,9 @@ func (l *GLTFLoader) Load(path string) (*Mesh, error) {
 
 	mesh := NewMesh(filepath.Base(path))
 
+	// Extract materials first
+	mesh.Materials = extractMaterials(doc, path)
+
 	// Process all meshes in the document
 	for _, m := range doc.Meshes {
 		if err := l.processMesh(doc, m, mesh); err != nil {
@@ -128,6 +131,12 @@ func (l *GLTFLoader) processMesh(doc *gltf.Document, m *gltf.Mesh, mesh *Mesh) e
 			mesh.Vertices = append(mesh.Vertices, v)
 		}
 
+		// Get material index for this primitive
+		materialIdx := -1
+		if prim.Material != nil {
+			materialIdx = int(*prim.Material)
+		}
+
 		// Process indices
 		if prim.Indices != nil {
 			indices, err := readIndices(doc, *prim.Indices)
@@ -145,6 +154,7 @@ func (l *GLTFLoader) processMesh(doc *gltf.Document, m *gltf.Mesh, mesh *Mesh) e
 						baseVertex + indices[i+2], // swapped
 						baseVertex + indices[i+1], // swapped
 					},
+					Material: materialIdx,
 				})
 			}
 		} else {
@@ -157,11 +167,97 @@ func (l *GLTFLoader) processMesh(doc *gltf.Document, m *gltf.Mesh, mesh *Mesh) e
 						baseVertex + i + 2, // swapped
 						baseVertex + i + 1, // swapped
 					},
+					Material: materialIdx,
 				})
 			}
 		}
 	}
 
+	return nil
+}
+
+// extractMaterials extracts all materials from a GLTF document.
+func extractMaterials(doc *gltf.Document, basePath string) []Material {
+	materials := make([]Material, len(doc.Materials))
+
+	for i, mat := range doc.Materials {
+		m := Material{
+			Name:      mat.Name,
+			BaseColor: [4]float64{1, 1, 1, 1}, // Default white
+			Metallic:  0,
+			Roughness: 1,
+		}
+
+		if mat.PBRMetallicRoughness != nil {
+			pbr := mat.PBRMetallicRoughness
+
+			// Extract base color
+			if pbr.BaseColorFactor != nil {
+				m.BaseColor = [4]float64{
+					float64(pbr.BaseColorFactor[0]),
+					float64(pbr.BaseColorFactor[1]),
+					float64(pbr.BaseColorFactor[2]),
+					float64(pbr.BaseColorFactor[3]),
+				}
+			}
+
+			// Extract metallic/roughness
+			if pbr.MetallicFactor != nil {
+				m.Metallic = float64(*pbr.MetallicFactor)
+			}
+			if pbr.RoughnessFactor != nil {
+				m.Roughness = float64(*pbr.RoughnessFactor)
+			}
+
+			// Extract base color texture if present
+			if pbr.BaseColorTexture != nil {
+				texIdx := pbr.BaseColorTexture.Index
+				if int(texIdx) < len(doc.Textures) {
+					tex := doc.Textures[texIdx]
+					if tex.Source != nil && int(*tex.Source) < len(doc.Images) {
+						img := doc.Images[*tex.Source]
+						texImg := loadGLTFImage(doc, img, basePath)
+						if texImg != nil {
+							m.BaseMap = texImg
+							m.HasTexture = true
+						}
+					}
+				}
+			}
+		}
+
+		materials[i] = m
+	}
+
+	return materials
+}
+
+// loadGLTFImage loads an image from GLTF (embedded or external).
+func loadGLTFImage(doc *gltf.Document, img *gltf.Image, basePath string) image.Image {
+	if img.BufferView != nil {
+		// Embedded image
+		bv := doc.BufferViews[*img.BufferView]
+		buf := doc.Buffers[bv.Buffer]
+		if buf.Data != nil {
+			start := bv.ByteOffset
+			end := start + bv.ByteLength
+			decoded, _, err := image.Decode(bytes.NewReader(buf.Data[start:end]))
+			if err == nil {
+				return decoded
+			}
+		}
+	} else if img.URI != "" {
+		// External image file
+		dir := filepath.Dir(basePath)
+		imgPath := filepath.Join(dir, img.URI)
+		data, err := os.ReadFile(imgPath)
+		if err == nil {
+			decoded, _, err := image.Decode(bytes.NewReader(data))
+			if err == nil {
+				return decoded
+			}
+		}
+	}
 	return nil
 }
 
