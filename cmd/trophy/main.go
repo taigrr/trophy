@@ -476,6 +476,10 @@ func run(modelPath string) error {
 
 		// Display
 		termRenderer.Render(fb)
+		if err := termRenderer.Flush(); err != nil {
+			cleanup()
+			return fmt.Errorf("flush: %w", err)
+		}
 
 		// Frame timing
 		elapsed := time.Since(now)
