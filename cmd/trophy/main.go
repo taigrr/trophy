@@ -78,30 +78,50 @@ func main() {
 	}
 }
 
-// RotationAxis tracks position and velocity for one rotation axis
+// RotationAxis tracks position and velocity for one rotation axis with spring decay
 type RotationAxis struct {
-	Position float64
-	Velocity float64
+	Position     float64
+	Velocity     float64
+	velSpring    harmonica.Spring
+	velAccel     float64 // internal spring velocity (for animating Velocity toward 0)
+}
+
+// NewRotationAxis creates an axis with harmonica spring for smooth velocity decay
+func NewRotationAxis(fps int) RotationAxis {
+	return RotationAxis{
+		// Frequency 4.0 = moderate speed, damping 1.0 = critically damped (no overshoot)
+		velSpring: harmonica.NewSpring(harmonica.FPS(fps), 4.0, 1.0),
+	}
+}
+
+// Update applies velocity to position and decays velocity toward 0 using spring
+func (a *RotationAxis) Update() {
+	// Apply velocity to position
+	a.Position += a.Velocity
+	
+	// Use spring to animate velocity toward 0 (smooth deceleration)
+	a.Velocity, a.velAccel = a.velSpring.Update(a.Velocity, a.velAccel, 0)
 }
 
 // RotationState holds rotation with harmonica spring physics
 type RotationState struct {
 	Pitch, Yaw, Roll RotationAxis
-	spring           harmonica.Spring
+	fps              int
 }
 
 func NewRotationState(fps int) *RotationState {
-	// Create spring: frequency 6.0 (responsive), damping 0.5 (smooth deceleration)
 	return &RotationState{
-		spring: harmonica.NewSpring(harmonica.FPS(fps), 6.0, 0.5),
+		Pitch: NewRotationAxis(fps),
+		Yaw:   NewRotationAxis(fps),
+		Roll:  NewRotationAxis(fps),
+		fps:   fps,
 	}
 }
 
 func (r *RotationState) Update() {
-	// Update each axis - spring towards current position (dampens velocity to 0)
-	r.Pitch.Position, r.Pitch.Velocity = r.spring.Update(r.Pitch.Position, r.Pitch.Velocity, r.Pitch.Position)
-	r.Yaw.Position, r.Yaw.Velocity = r.spring.Update(r.Yaw.Position, r.Yaw.Velocity, r.Yaw.Position)
-	r.Roll.Position, r.Roll.Velocity = r.spring.Update(r.Roll.Position, r.Roll.Velocity, r.Roll.Position)
+	r.Pitch.Update()
+	r.Yaw.Update()
+	r.Roll.Update()
 }
 
 func (r *RotationState) ApplyImpulse(pitch, yaw, roll float64) {
@@ -111,9 +131,9 @@ func (r *RotationState) ApplyImpulse(pitch, yaw, roll float64) {
 }
 
 func (r *RotationState) Reset() {
-	r.Pitch = RotationAxis{}
-	r.Yaw = RotationAxis{}
-	r.Roll = RotationAxis{}
+	r.Pitch = NewRotationAxis(r.fps)
+	r.Yaw = NewRotationAxis(r.fps)
+	r.Roll = NewRotationAxis(r.fps)
 }
 
 // RenderMode controls how the mesh is drawn
