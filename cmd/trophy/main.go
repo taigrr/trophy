@@ -12,6 +12,7 @@
 //   T           - Toggle texture on/off
 //   X           - Toggle wireframe mode (x-ray)
 //   L           - Light positioning mode (move mouse, click to set, Esc to cancel)
+//   ?           - Toggle HUD overlay (FPS, filename, poly count, mode status)
 //   +/-         - Adjust zoom
 //   Esc         - Quit (or cancel light mode)
 package main
@@ -57,6 +58,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "  T           - Toggle texture\n")
 		fmt.Fprintf(os.Stderr, "  X           - Toggle wireframe\n")
 		fmt.Fprintf(os.Stderr, "  L           - Position light (mouse to aim, click to set)\n")
+		fmt.Fprintf(os.Stderr, "  ?           - Toggle HUD overlay\n")
 		fmt.Fprintf(os.Stderr, "  Esc         - Quit\n")
 	}
 	flag.Parse()
@@ -132,6 +134,7 @@ type ViewState struct {
 	LightMode      bool        // Whether in light positioning mode
 	LightDir       math3d.Vec3 // Current light direction
 	PendingLight   math3d.Vec3 // Light direction while positioning
+	ShowHUD        bool        // Whether to show the HUD overlay
 }
 
 // NewViewState creates default view state
@@ -141,6 +144,108 @@ func NewViewState() *ViewState {
 		RenderMode:     RenderModeTextured,
 		LightMode:      false,
 		LightDir:       math3d.V3(0.5, 1, 0.3).Normalize(),
+	}
+}
+
+// HUD renders an overlay with model info and controls
+type HUD struct {
+	filename  string
+	polyCount int
+	fps       float64
+	fpsFrames int
+	fpsTime   time.Time
+}
+
+// NewHUD creates a new HUD
+func NewHUD(filename string, polyCount int) *HUD {
+	return &HUD{
+		filename:  filename,
+		polyCount: polyCount,
+		fpsTime:   time.Now(),
+	}
+}
+
+// UpdateFPS updates the FPS counter (call once per frame)
+func (h *HUD) UpdateFPS() {
+	h.fpsFrames++
+	elapsed := time.Since(h.fpsTime)
+	if elapsed >= time.Second {
+		h.fps = float64(h.fpsFrames) / elapsed.Seconds()
+		h.fpsFrames = 0
+		h.fpsTime = time.Now()
+	}
+}
+
+// Render draws the HUD overlay directly to the terminal
+func (h *HUD) Render(width, height int, viewState *ViewState) {
+	// ANSI escape codes for positioning and styling
+	const (
+		reset     = "\x1b[0m"
+		bold      = "\x1b[1m"
+		dim       = "\x1b[2m"
+		bgBlack   = "\x1b[40m"
+		fgWhite   = "\x1b[97m"
+		fgGreen   = "\x1b[92m"
+		fgYellow  = "\x1b[93m"
+		fgCyan    = "\x1b[96m"
+	)
+
+	// Helper to position cursor
+	moveTo := func(row, col int) string {
+		return fmt.Sprintf("\x1b[%d;%dH", row, col)
+	}
+
+	// Top left: FPS
+	fpsStr := fmt.Sprintf("%s%s%s %.0f FPS %s", moveTo(1, 1), bgBlack, fgGreen, h.fps, reset)
+	fmt.Print(fpsStr)
+
+	// Top middle: filename
+	titleStr := fmt.Sprintf("%s%s%s %s %s", bold, bgBlack, fgWhite, h.filename, reset)
+	titleCol := (width - len(h.filename) - 2) / 2
+	if titleCol < 1 {
+		titleCol = 1
+	}
+	fmt.Print(moveTo(1, titleCol) + titleStr)
+
+	// Top right: polygon count
+	polyStr := fmt.Sprintf("%s%s%s %d polys %s", bgBlack, fgCyan, bold, h.polyCount, reset)
+	polyCol := width - 12
+	if polyCol < 1 {
+		polyCol = 1
+	}
+	fmt.Print(moveTo(1, polyCol) + polyStr)
+
+	// Bottom: mode checkboxes and hint
+	checkTex := "[ ]"
+	if viewState.TextureEnabled && viewState.RenderMode != RenderModeWireframe {
+		checkTex = "[✓]"
+	}
+	checkWire := "[ ]"
+	if viewState.RenderMode == RenderModeWireframe {
+		checkWire = "[✓]"
+	}
+
+	modeStr := fmt.Sprintf("%s%s%s %s Texture  %s X-Ray %s", 
+		bgBlack, fgWhite, checkTex, checkWire, reset, reset)
+	fmt.Print(moveTo(height, 1) + modeStr)
+
+	// Light hint (right side of bottom)
+	hint := fmt.Sprintf("%s%s%s L: position light %s", bgBlack, dim, fgYellow, reset)
+	hintCol := width - 18
+	if hintCol < 1 {
+		hintCol = 1
+	}
+	fmt.Print(moveTo(height, hintCol) + hint)
+
+	// Light mode indicator
+	if viewState.LightMode {
+		lightMsg := fmt.Sprintf("%s%s%s ◉ LIGHT MODE - Click to set, Esc to cancel %s", 
+			bgBlack, bold, fgYellow, reset)
+		lightCol := (width - 42) / 2
+		if lightCol < 1 {
+			lightCol = 1
+		}
+		fmt.Print(moveTo(height/2, lightCol) + lightMsg)
 	}
 }
 
@@ -248,6 +353,9 @@ func run(modelPath string) error {
 
 	fmt.Printf("Loaded: %s (%d vertices, %d triangles)\n", filepath.Base(modelPath), mesh.VertexCount(), mesh.TriangleCount())
 
+	// Create HUD
+	hud := NewHUD(filepath.Base(modelPath), mesh.TriangleCount())
+
 	// Center and scale model
 	mesh.CalculateBounds()
 	center := mesh.Center()
@@ -350,6 +458,9 @@ func run(modelPath string) error {
 					// Enter light positioning mode
 					viewState.LightMode = true
 					viewState.PendingLight = viewState.LightDir
+				case ev.MatchString("?", "shift+/"):
+					// Toggle HUD
+					viewState.ShowHUD = !viewState.ShowHUD
 				}
 
 			case uv.KeyReleaseEvent:
@@ -479,6 +590,12 @@ func run(modelPath string) error {
 		if err := termRenderer.Flush(); err != nil {
 			cleanup()
 			return fmt.Errorf("flush: %w", err)
+		}
+
+		// HUD overlay
+		hud.UpdateFPS()
+		if viewState.ShowHUD || viewState.LightMode {
+			hud.Render(width, height, viewState)
 		}
 
 		// Frame timing
