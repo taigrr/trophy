@@ -414,7 +414,7 @@ func run(modelPath string) error {
 
 	// Input state
 	inputTorque := struct{ pitch, yaw, roll float64 }{}
-	const torqueStrength = 15.0
+	const torqueStrength = 3.0
 
 	// Mouse state
 	var mouseDown bool
@@ -466,9 +466,9 @@ func run(modelPath string) error {
 					inputTorque.roll = torqueStrength
 				case ev.MatchString("space"):
 					rotation.ApplyImpulse(
-						(rand.Float64()-0.5)*20,
-						(rand.Float64()-0.5)*20,
-						(rand.Float64()-0.5)*20,
+						(rand.Float64()-0.5)*1.5,
+						(rand.Float64()-0.5)*1.5,
+						(rand.Float64()-0.5)*1.5,
 					)
 				case ev.MatchString("+", "="):
 					cameraZ = math.Max(1, cameraZ-0.5)
@@ -497,11 +497,11 @@ func run(modelPath string) error {
 
 			case uv.KeyReleaseEvent:
 				switch {
-				case ev.MatchString("w", "up", "s", "down"):
+				case ev.MatchString("w"), ev.MatchString("up"), ev.MatchString("s"), ev.MatchString("down"):
 					inputTorque.pitch = 0
-				case ev.MatchString("a", "left", "d", "right"):
+				case ev.MatchString("a"), ev.MatchString("left"), ev.MatchString("d"), ev.MatchString("right"):
 					inputTorque.yaw = 0
-				case ev.MatchString("q", "e"):
+				case ev.MatchString("q"), ev.MatchString("e"):
 					inputTorque.roll = 0
 				}
 
@@ -527,7 +527,7 @@ func run(modelPath string) error {
 				} else if mouseDown {
 					dx := ev.X - lastMouseX
 					dy := ev.Y - lastMouseY
-					rotation.ApplyImpulse(float64(dy)*0.5, float64(dx)*0.5, 0)
+					rotation.ApplyImpulse(float64(dy)*0.03, float64(dx)*0.03, 0)
 					lastMouseX, lastMouseY = ev.X, ev.Y
 				}
 
