@@ -71,8 +71,8 @@ fb := render.NewFramebuffer(320, 200)
 camera := render.NewCamera()
 rasterizer := render.NewRasterizer(camera, fb)
 
-// Render
-rasterizer.DrawMeshTexturedGouraud(mesh, transform, texture, lightDir)
+// Render (uses optimized edge-function rasterizer)
+rasterizer.DrawMeshTexturedOpt(mesh, transform, texture, lightDir)
 ```
 
 ## Packages
@@ -89,40 +89,42 @@ Run with `go test -bench=. -benchmem ./...`
 
 | Benchmark      | ns/op | B/op | allocs/op |
 | -------------- | ----: | ---: | --------: |
-| Mat4Mul        | 32.61 |    0 |         0 |
-| Mat4MulVec4    |  2.81 |    0 |         0 |
-| Mat4MulVec3    |  2.64 |    0 |         0 |
-| Mat4Inverse    | 18.58 |    0 |         0 |
-| Vec3Normalize  |  1.62 |    0 |         0 |
-| Vec3Cross      |  1.58 |    0 |         0 |
-| Vec3Dot        |  1.57 |    0 |         0 |
-| Perspective    |  6.34 |    0 |         0 |
-| LookAt         |  6.26 |    0 |         0 |
-| ViewProjection | 32.96 |    0 |         0 |
+| Mat4Mul        | 74.86 |    0 |         0 |
+| Mat4MulVec4    |  6.84 |    0 |         0 |
+| Mat4MulVec3    |  8.24 |    0 |         0 |
+| Mat4Inverse    | 62.13 |    0 |         0 |
+| Vec3Normalize  |  7.41 |    0 |         0 |
+| Vec3Cross      |  2.47 |    0 |         0 |
+| Vec3Dot        |  2.48 |    0 |         0 |
+| Perspective    | 24.15 |    0 |         0 |
+| LookAt         | 33.66 |    0 |         0 |
+| ViewProjection | 71.32 |    0 |         0 |
 
 ### Rendering (pkg/render)
 
-| Benchmark                  | ns/op | B/op | allocs/op |
-| -------------------------- | ----: | ---: | --------: |
-| FrustumExtract             | 37.02 |    0 |         0 |
-| AABBIntersection (visible) |  9.89 |    0 |         0 |
-| AABBIntersection (culled)  |  7.77 |    0 |         0 |
-| TransformAABB              | 129.8 |    0 |         0 |
-| FrustumIntersectAABB       |  7.34 |    0 |         0 |
-| FrustumIntersectsSphere    |  4.91 |    0 |         0 |
-| DrawTriangleGouraud        |  4696 |    0 |         0 |
-| DrawMeshGouraud            | 55400 |    0 |         0 |
-| DrawTriangleGouraudOpt     |  3975 |    0 |         0 |
-| DrawMeshGouraudOpt         | 26654 |    0 |         0 |
+| Benchmark                  |  ns/op | B/op | allocs/op |
+| -------------------------- | -----: | ---: | --------: |
+| FrustumExtract             |  90.31 |    0 |         0 |
+| AABBIntersection (visible) |  25.67 |    0 |         0 |
+| AABBIntersection (culled)  |  15.37 |    0 |         0 |
+| TransformAABB              |  246.5 |    0 |         0 |
+| FrustumIntersectAABB       |  20.84 |    0 |         0 |
+| FrustumIntersectsSphere    |  12.35 |    0 |         0 |
+| DrawTriangleGouraud        |  10175 |    0 |         0 |
+| DrawTriangleGouraudOpt     |   8012 |    0 |         0 |
+| DrawMeshGouraud            | 185440 |    0 |         0 |
+| DrawMeshGouraudOpt         |  79676 |    0 |         0 |
 
 ### Culling Performance
 
 | Benchmark                       |  ns/op | B/op | allocs/op |
 | ------------------------------- | -----: | ---: | --------: |
-| MeshRendering (with culling)    | 112726 |    0 |         0 |
-| MeshRendering (without culling) | 139805 |    0 |         0 |
+| MeshRendering (with culling)    | 285282 |    0 |         0 |
+| MeshRendering (without culling) | 362384 |    0 |         0 |
 
-_Benchmarks run on Apple M4 Max, darwin/arm64_
+The optimized rasterizer (`*Opt` variants) uses incremental edge functions instead of per-pixel barycentric recomputation, yielding **~21% speedup** on triangles and **~57% speedup** on full mesh rendering.
+
+_Benchmarks run on AMD EPYC 7642 48-Core, linux/amd64_
 
 ## Credits
 

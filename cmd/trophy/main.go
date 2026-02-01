@@ -677,13 +677,13 @@ func run(modelPath string) error {
 			rasterizer.DrawMeshWireframe(mesh, transform, render.RGB(0, 255, 128))
 		case RenderModeFlat:
 			// Flat shading (no texture)
-			rasterizer.DrawMeshGouraud(mesh, transform, render.RGB(200, 200, 200), lightDir)
+			rasterizer.DrawMeshGouraudOpt(mesh, transform, render.RGB(200, 200, 200), lightDir)
 		default:
 			// Textured mode
 			if viewState.TextureEnabled {
-				rasterizer.DrawMeshTexturedGouraud(mesh, transform, texture, lightDir)
+				rasterizer.DrawMeshTexturedOpt(mesh, transform, texture, lightDir)
 			} else {
-				rasterizer.DrawMeshGouraud(mesh, transform, render.RGB(200, 200, 200), lightDir)
+				rasterizer.DrawMeshGouraudOpt(mesh, transform, render.RGB(200, 200, 200), lightDir)
 			}
 		}
 
