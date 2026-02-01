@@ -20,7 +20,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"image"
 	"math"
@@ -32,49 +31,52 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/charmbracelet/fang"
 	"github.com/charmbracelet/harmonica"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/spf13/cobra"
 	"github.com/taigrr/trophy/pkg/math3d"
 	"github.com/taigrr/trophy/pkg/models"
 	"github.com/taigrr/trophy/pkg/render"
 )
 
 var (
-	texturePath = flag.String("texture", "", "Path to texture image (PNG/JPG)")
-	targetFPS   = flag.Int("fps", 60, "Target FPS")
-	bgColor     = flag.String("bg", "30,30,40", "Background color (R,G,B)")
+	texturePath string
+	targetFPS   int
+	bgColor     string
 )
 
 func main() {
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "trophy - Terminal 3D Model Viewer\n\n")
-		fmt.Fprintf(os.Stderr, "Usage: trophy [options] <model.obj|model.glb>\n\n")
-		fmt.Fprintf(os.Stderr, "Options:\n")
-		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nControls:\n")
-		fmt.Fprintf(os.Stderr, "  Mouse drag  - Rotate model\n")
-		fmt.Fprintf(os.Stderr, "  Scroll      - Zoom in/out\n")
-		fmt.Fprintf(os.Stderr, "  W/S/A/D     - Pitch and yaw\n")
-		fmt.Fprintf(os.Stderr, "  Q/E         - Roll left/right\n")
-		fmt.Fprintf(os.Stderr, "  Space       - Random spin\n")
-		fmt.Fprintf(os.Stderr, "  R           - Reset view\n")
-		fmt.Fprintf(os.Stderr, "  T           - Toggle texture\n")
-		fmt.Fprintf(os.Stderr, "  X           - Toggle wireframe\n")
-		fmt.Fprintf(os.Stderr, "  L           - Position light (mouse to aim, click to set)\n")
-		fmt.Fprintf(os.Stderr, "  ?           - Toggle HUD overlay\n")
-		fmt.Fprintf(os.Stderr, "  Esc         - Quit\n")
+	cmd := &cobra.Command{
+		Use:   "trophy <model.obj|model.glb>",
+		Short: "Terminal 3D Model Viewer",
+		Long: `trophy - Terminal 3D Model Viewer
+
+View OBJ and GLB files in your terminal with full 3D rendering.
+
+Controls:
+  Mouse drag  - Rotate model
+  Scroll      - Zoom in/out
+  W/S/A/D     - Pitch and yaw
+  Q/E         - Roll left/right
+  Space       - Random spin
+  R           - Reset view
+  T           - Toggle texture
+  X           - Toggle wireframe
+  L           - Position light (mouse to aim, click to set)
+  ?           - Toggle HUD overlay
+  Esc         - Quit`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return run(args[0])
+		},
 	}
-	flag.Parse()
 
-	if flag.NArg() < 1 {
-		flag.Usage()
-		os.Exit(1)
-	}
+	cmd.Flags().StringVar(&texturePath, "texture", "", "Path to texture image (PNG/JPG)")
+	cmd.Flags().IntVar(&targetFPS, "fps", 60, "Target FPS")
+	cmd.Flags().StringVar(&bgColor, "bg", "30,30,40", "Background color (R,G,B)")
 
-	modelPath := flag.Arg(0)
-
-	if err := run(modelPath); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+	if err := fang.Execute(context.Background(), cmd); err != nil {
 		os.Exit(1)
 	}
 }
@@ -294,7 +296,7 @@ func (v *ViewState) ScreenToLightDir(screenX, screenY, width, height int) math3d
 func run(modelPath string) error {
 	// Parse background color
 	var bgR, bgG, bgB uint8 = 30, 30, 40
-	fmt.Sscanf(*bgColor, "%d,%d,%d", &bgR, &bgG, &bgB)
+	fmt.Sscanf(bgColor, "%d,%d,%d", &bgR, &bgG, &bgB)
 
 	// Create terminal
 	term := uv.DefaultTerminal()
@@ -333,8 +335,8 @@ func run(modelPath string) error {
 
 	// Load texture if specified
 	var texture *render.Texture
-	if *texturePath != "" {
-		texture, err = render.LoadTexture(*texturePath)
+	if texturePath != "" {
+		texture, err = render.LoadTexture(texturePath)
 		if err != nil {
 			fmt.Printf("Warning: could not load texture: %v\n", err)
 		}
@@ -387,7 +389,7 @@ func run(modelPath string) error {
 	}
 
 	// Initialize rotation and view state
-	rotation := NewRotationState(*targetFPS)
+	rotation := NewRotationState(targetFPS)
 	viewState := NewViewState()
 
 	// Context for clean shutdown
@@ -539,7 +541,7 @@ func run(modelPath string) error {
 	}()
 
 	// Main loop
-	targetDuration := time.Second / time.Duration(*targetFPS)
+	targetDuration := time.Second / time.Duration(targetFPS)
 	lastFrame := time.Now()
 
 	cleanup := func() {
