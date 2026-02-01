@@ -104,25 +104,25 @@ Run with `go test -bench=. -benchmem ./...`
 
 | Benchmark                  |  ns/op | B/op | allocs/op |
 | -------------------------- | -----: | ---: | --------: |
-| FrustumExtract             |  90.31 |    0 |         0 |
-| AABBIntersection (visible) |  25.67 |    0 |         0 |
-| AABBIntersection (culled)  |  15.37 |    0 |         0 |
-| TransformAABB              |  246.5 |    0 |         0 |
-| FrustumIntersectAABB       |  20.84 |    0 |         0 |
-| FrustumIntersectsSphere    |  12.35 |    0 |         0 |
-| DrawTriangleGouraud        |  10175 |    0 |         0 |
-| DrawTriangleGouraudOpt     |   8012 |    0 |         0 |
-| DrawMeshGouraud            | 185440 |    0 |         0 |
-| DrawMeshGouraudOpt         |  79676 |    0 |         0 |
+| FrustumExtract             |  37.03 |    0 |         0 |
+| AABBIntersection (visible) |   9.96 |    0 |         0 |
+| AABBIntersection (culled)  |   7.76 |    0 |         0 |
+| TransformAABB              |  125.8 |    0 |         0 |
+| FrustumIntersectAABB       |   7.31 |    0 |         0 |
+| FrustumIntersectsSphere    |   4.91 |    0 |         0 |
+| DrawTriangleGouraud        |   4858 |    0 |         0 |
+| DrawTriangleGouraudOpt     |   3981 |    0 |         0 |
+| DrawMeshGouraud            |  55741 |    0 |         0 |
+| DrawMeshGouraudOpt         |  27868 |    0 |         0 |
 
 ### Culling Performance
 
 | Benchmark                       |  ns/op | B/op | allocs/op |
 | ------------------------------- | -----: | ---: | --------: |
-| MeshRendering (with culling)    | 285282 |    0 |         0 |
-| MeshRendering (without culling) | 362384 |    0 |         0 |
+| MeshRendering (with culling)    | 115793 |    0 |         0 |
+| MeshRendering (without culling) | 141766 |    0 |         0 |
 
-The optimized rasterizer (`*Opt` variants) uses incremental edge functions instead of per-pixel barycentric recomputation, yielding **~21% speedup** on triangles and **~57% speedup** on full mesh rendering.
+The optimized rasterizer (`*Opt` variants) uses incremental edge functions instead of per-pixel barycentric recomputation, yielding **~18% speedup** on triangles and **~50% speedup** on full mesh rendering.
 
 _Benchmarks run on AMD EPYC 7642 48-Core, linux/amd64_
 
