@@ -3,6 +3,7 @@ module github.com/taigrr/trophy
 go 1.24.2
 
 require (
+	github.com/charmbracelet/harmonica v0.2.0
 	github.com/charmbracelet/ultraviolet v0.0.0-20260123224754-f434aada8dbd
 	github.com/qmuntal/gltf v0.28.0
 )

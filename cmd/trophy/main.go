@@ -31,6 +31,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/charmbracelet/harmonica"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/taigrr/trophy/pkg/math3d"
 	"github.com/taigrr/trophy/pkg/models"
@@ -77,46 +78,42 @@ func main() {
 	}
 }
 
-// Spring represents a damped harmonic oscillator for smooth rotation
-type Spring struct {
+// RotationAxis tracks position and velocity for one rotation axis
+type RotationAxis struct {
 	Position float64
 	Velocity float64
-	Damping  float64
 }
 
-func (s *Spring) Update(dt float64) {
-	dampingForce := -s.Damping * s.Velocity
-	s.Velocity += dampingForce * dt
-	s.Position += s.Velocity * dt
-}
-
-func (s *Spring) ApplyImpulse(impulse float64) {
-	s.Velocity += impulse
-}
-
-// RotationState holds rotation with spring physics
+// RotationState holds rotation with harmonica spring physics
 type RotationState struct {
-	Pitch, Yaw, Roll Spring
+	Pitch, Yaw, Roll RotationAxis
+	spring           harmonica.Spring
 }
 
-func NewRotationState() *RotationState {
+func NewRotationState(fps int) *RotationState {
+	// Create spring: frequency 6.0 (responsive), damping 0.5 (smooth deceleration)
 	return &RotationState{
-		Pitch: Spring{Damping: 2.0},
-		Yaw:   Spring{Damping: 2.0},
-		Roll:  Spring{Damping: 2.0},
+		spring: harmonica.NewSpring(harmonica.FPS(fps), 6.0, 0.5),
 	}
 }
 
-func (r *RotationState) Update(dt float64) {
-	r.Pitch.Update(dt)
-	r.Yaw.Update(dt)
-	r.Roll.Update(dt)
+func (r *RotationState) Update() {
+	// Update each axis - spring towards current position (dampens velocity to 0)
+	r.Pitch.Position, r.Pitch.Velocity = r.spring.Update(r.Pitch.Position, r.Pitch.Velocity, r.Pitch.Position)
+	r.Yaw.Position, r.Yaw.Velocity = r.spring.Update(r.Yaw.Position, r.Yaw.Velocity, r.Yaw.Position)
+	r.Roll.Position, r.Roll.Velocity = r.spring.Update(r.Roll.Position, r.Roll.Velocity, r.Roll.Position)
+}
+
+func (r *RotationState) ApplyImpulse(pitch, yaw, roll float64) {
+	r.Pitch.Velocity += pitch
+	r.Yaw.Velocity += yaw
+	r.Roll.Velocity += roll
 }
 
 func (r *RotationState) Reset() {
-	r.Pitch = Spring{Damping: 2.0}
-	r.Yaw = Spring{Damping: 2.0}
-	r.Roll = Spring{Damping: 2.0}
+	r.Pitch = RotationAxis{}
+	r.Yaw = RotationAxis{}
+	r.Roll = RotationAxis{}
 }
 
 // RenderMode controls how the mesh is drawn
@@ -381,7 +378,7 @@ func run(modelPath string) error {
 	}
 
 	// Initialize rotation and view state
-	rotation := NewRotationState()
+	rotation := NewRotationState(*targetFPS)
 	viewState := NewViewState()
 
 	// Context for clean shutdown
@@ -448,9 +445,11 @@ func run(modelPath string) error {
 				case ev.MatchString("e"):
 					inputTorque.roll = torqueStrength
 				case ev.MatchString("space"):
-					rotation.Pitch.ApplyImpulse((rand.Float64() - 0.5) * 20)
-					rotation.Yaw.ApplyImpulse((rand.Float64() - 0.5) * 20)
-					rotation.Roll.ApplyImpulse((rand.Float64() - 0.5) * 20)
+					rotation.ApplyImpulse(
+						(rand.Float64()-0.5)*20,
+						(rand.Float64()-0.5)*20,
+						(rand.Float64()-0.5)*20,
+					)
 				case ev.MatchString("+", "="):
 					cameraZ = math.Max(1, cameraZ-0.5)
 					camera.SetPosition(math3d.V3(0, 0, cameraZ))
@@ -508,8 +507,7 @@ func run(modelPath string) error {
 				} else if mouseDown {
 					dx := ev.X - lastMouseX
 					dy := ev.Y - lastMouseY
-					rotation.Yaw.ApplyImpulse(float64(dx) * 0.5)
-					rotation.Pitch.ApplyImpulse(float64(dy) * 0.5)
+					rotation.ApplyImpulse(float64(dy)*0.5, float64(dx)*0.5, 0)
 					lastMouseX, lastMouseY = ev.X, ev.Y
 				}
 
@@ -559,12 +557,14 @@ func run(modelPath string) error {
 		}
 
 		// Apply input torque
-		rotation.Pitch.ApplyImpulse(inputTorque.pitch * dt)
-		rotation.Yaw.ApplyImpulse(inputTorque.yaw * dt)
-		rotation.Roll.ApplyImpulse(inputTorque.roll * dt)
+		rotation.ApplyImpulse(
+			inputTorque.pitch*dt,
+			inputTorque.yaw*dt,
+			inputTorque.roll*dt,
+		)
 
-		// Update springs
-		rotation.Update(dt)
+		// Update springs (harmonica handles timing internally)
+		rotation.Update()
 
 		// Build transform
 		transform := math3d.RotateX(rotation.Pitch.Position).
