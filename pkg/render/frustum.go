@@ -1,4 +1,4 @@
-// Package render provides software rasterization for TuiKart.
+// Package render provides software rasterization for Trophy.
 package render
 
 import (

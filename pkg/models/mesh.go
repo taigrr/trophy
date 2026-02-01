@@ -1,4 +1,4 @@
-// Package models provides 3D model loading and representation for TuiKart.
+// Package models provides 3D model loading and representation for Trophy.
 package models
 
 import (

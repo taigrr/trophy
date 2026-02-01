@@ -75,9 +75,80 @@ Controls:
 	cmd.Flags().IntVar(&targetFPS, "fps", 60, "Target FPS")
 	cmd.Flags().StringVar(&bgColor, "bg", "30,30,40", "Background color (R,G,B)")
 
+	// Add info subcommand
+	infoCmd := &cobra.Command{
+		Use:   "info <model.obj|model.glb>",
+		Short: "Display model information",
+		Long:  "Display detailed information about a 3D model file including format, polygon count, vertex count, and bounding box.",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runInfo(args[0])
+		},
+	}
+	cmd.AddCommand(infoCmd)
+
 	if err := fang.Execute(context.Background(), cmd); err != nil {
 		os.Exit(1)
 	}
+}
+
+func runInfo(modelPath string) error {
+	ext := strings.ToLower(filepath.Ext(modelPath))
+
+	// Check file exists
+	info, err := os.Stat(modelPath)
+	if err != nil {
+		return fmt.Errorf("cannot access file: %w", err)
+	}
+
+	var mesh *models.Mesh
+	var hasEmbeddedTexture bool
+	var textureSize string
+
+	switch ext {
+	case ".glb", ".gltf":
+		var img image.Image
+		mesh, img, err = models.LoadGLBWithTexture(modelPath)
+		if err != nil {
+			return fmt.Errorf("load model: %w", err)
+		}
+		if img != nil {
+			hasEmbeddedTexture = true
+			bounds := img.Bounds()
+			textureSize = fmt.Sprintf("%dx%d", bounds.Dx(), bounds.Dy())
+		}
+	case ".obj":
+		mesh, err = models.LoadOBJ(modelPath)
+		if err != nil {
+			return fmt.Errorf("load model: %w", err)
+		}
+	default:
+		return fmt.Errorf("unsupported format: %s (use .obj or .glb)", ext)
+	}
+
+	mesh.CalculateBounds()
+	size := mesh.Size()
+	center := mesh.Center()
+
+	// Format output
+	fmt.Printf("File:       %s\n", filepath.Base(modelPath))
+	fmt.Printf("Format:     %s\n", strings.ToUpper(strings.TrimPrefix(ext, ".")))
+	fmt.Printf("Size:       %.2f KB\n", float64(info.Size())/1024)
+	fmt.Println()
+	fmt.Printf("Vertices:   %d\n", mesh.VertexCount())
+	fmt.Printf("Triangles:  %d\n", mesh.TriangleCount())
+	fmt.Println()
+	fmt.Printf("Bounds Min: (%.3f, %.3f, %.3f)\n", mesh.BoundsMin.X, mesh.BoundsMin.Y, mesh.BoundsMin.Z)
+	fmt.Printf("Bounds Max: (%.3f, %.3f, %.3f)\n", mesh.BoundsMax.X, mesh.BoundsMax.Y, mesh.BoundsMax.Z)
+	fmt.Printf("Dimensions: %.3f x %.3f x %.3f\n", size.X, size.Y, size.Z)
+	fmt.Printf("Center:     (%.3f, %.3f, %.3f)\n", center.X, center.Y, center.Z)
+
+	if hasEmbeddedTexture {
+		fmt.Println()
+		fmt.Printf("Texture:    embedded (%s)\n", textureSize)
+	}
+
+	return nil
 }
 
 // RotationAxis tracks position and velocity for one rotation axis with spring decay

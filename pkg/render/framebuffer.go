@@ -1,4 +1,4 @@
-// Package render provides terminal rendering capabilities for TuiKart.
+// Package render provides terminal rendering capabilities for Trophy.
 package render
 
 import (

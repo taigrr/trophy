@@ -1,4 +1,4 @@
-// Package math3d provides 3D math primitives for the TuiKart engine.
+// Package math3d provides 3D math primitives for the Trophy engine.
 package math3d
 
 import "math"
