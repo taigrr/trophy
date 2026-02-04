@@ -20,13 +20,24 @@ func (r *Framebuffer) Draw(scr uv.Screen, area uv.Rectangle) {
 		for col := area.Min.X; col < area.Max.X && col < r.Width; col++ {
 			topColor := r.GetPixel(col, topY)
 			botColor := r.GetPixel(col, botY)
+			fg, bg := rgbaToColor(topColor), rgbaToColor(botColor)
+
+			content := "▀"
+			if fg == nil && bg == nil {
+				content = " "
+			} else if fg == nil {
+				// Only bottom color
+				content = "▄"
+				fg = bg
+				bg = nil
+			}
 
 			cell := &uv.Cell{
-				Content: "▀",
+				Content: content,
 				Width:   1,
 				Style: uv.Style{
-					Fg: rgbaToColor(topColor),
-					Bg: rgbaToColor(botColor),
+					Fg: fg,
+					Bg: bg,
 				},
 			}
 			scr.SetCell(col, row, cell)

@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"image/color"
 	"math"
 	"os"
 	"os/signal"
@@ -75,7 +76,7 @@ Controls:
 
 	cmd.Flags().StringVar(&texturePath, "texture", "", "Path to texture image (PNG/JPG)")
 	cmd.Flags().IntVar(&targetFPS, "fps", 60, "Target FPS")
-	cmd.Flags().StringVar(&bgColor, "bg", "30,30,40", "Background color (R,G,B)")
+	cmd.Flags().StringVar(&bgColor, "bg", "", "Background color (R,G,B)")
 
 	// Add info subcommand
 	infoCmd := &cobra.Command{
@@ -374,8 +375,11 @@ func (v *ViewState) ScreenToLightDir(screenX, screenY, width, height int) math3d
 
 func run(modelPath string) (err error) {
 	// Parse background color
-	var bgR, bgG, bgB uint8 = 30, 30, 40
-	fmt.Sscanf(bgColor, "%d,%d,%d", &bgR, &bgG, &bgB)
+	var bg color.RGBA
+	if bgColor != "" {
+		fmt.Sscanf(bgColor, "%d,%d,%d", &bg.R, &bg.G, &bg.B)
+		bg.A = 255
+	}
 
 	// Create terminal
 	term := uv.DefaultTerminal()
@@ -395,6 +399,7 @@ func run(modelPath string) (err error) {
 	// Create renderer
 	fbWidth, fbHeight := scrBounds.Dx(), scrBounds.Dy()*2
 	fb := render.NewFramebuffer(fbWidth, fbHeight)
+	fb.BG = bg
 
 	// Create camera
 	camera := render.NewCamera()
@@ -499,6 +504,7 @@ func run(modelPath string) (err error) {
 				scrBounds = scr.Bounds()
 				fbWidth, fbHeight = scrBounds.Dx(), scrBounds.Dy()*2
 				fb = render.NewFramebuffer(fbWidth, fbHeight)
+				fb.BG = bg
 				rasterizer = render.NewRasterizer(camera, fb)
 				camera.SetAspectRatio(float64(fb.Width) / float64(fb.Height))
 
@@ -665,7 +671,7 @@ func run(modelPath string) (err error) {
 			Mul(math3d.RotateZ(rotation.Roll.Position))
 
 		// Render
-		fb.Clear(render.RGB(bgR, bgG, bgB))
+		fb.Clear(fb.BG)
 		rasterizer.ClearDepth()
 
 		// Choose light direction (pending if in light mode, otherwise current)

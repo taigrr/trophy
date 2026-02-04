@@ -14,6 +14,7 @@ type Framebuffer struct {
 	Width  int          // Width in "pixels" (same as terminal columns)
 	Height int          // Height in "pixels" (2x terminal rows due to half-blocks)
 	Pixels []color.RGBA // Row-major pixel data
+	BG     color.RGBA   // Background color for transparent pixels
 }
 
 // NewFramebuffer creates a new framebuffer with the given dimensions.
