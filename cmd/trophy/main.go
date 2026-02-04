@@ -33,6 +33,8 @@ import (
 	"github.com/charmbracelet/fang"
 	"github.com/charmbracelet/harmonica"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/ultraviolet/screen"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/spf13/cobra"
 	"github.com/taigrr/trophy/pkg/math3d"
 	"github.com/taigrr/trophy/pkg/models"
@@ -255,14 +257,16 @@ type HUD struct {
 	fps       float64
 	fpsFrames int
 	fpsTime   time.Time
+	state     *ViewState
 }
 
 // NewHUD creates a new HUD
-func NewHUD(filename string, polyCount int) *HUD {
+func NewHUD(filename string, polyCount int, state *ViewState) *HUD {
 	return &HUD{
 		filename:  filename,
 		polyCount: polyCount,
 		fpsTime:   time.Now(),
+		state:     state,
 	}
 }
 
@@ -277,77 +281,72 @@ func (h *HUD) UpdateFPS() {
 	}
 }
 
-// Render draws the HUD overlay directly to the terminal
-func (h *HUD) Render(width, height int, viewState *ViewState) {
-	// ANSI escape codes for positioning and styling
-	const (
-		reset     = "\x1b[0m"
-		bold      = "\x1b[1m"
-		dim       = "\x1b[2m"
-		bgBlack   = "\x1b[40m"
-		fgWhite   = "\x1b[97m"
-		fgGreen   = "\x1b[92m"
-		fgYellow  = "\x1b[93m"
-		fgCyan    = "\x1b[96m"
-		clearLine = "\x1b[2K"
-	)
-
-	// Helper to position cursor
-	moveTo := func(row, col int) string {
-		return fmt.Sprintf("\x1b[%d;%dH", row, col)
-	}
-
-	// Always clear the HUD rows (so toggling off works)
-	fmt.Print(moveTo(1, 1) + clearLine)
-	fmt.Print(moveTo(height, 1) + clearLine)
+// Draw draws the HUD overlay directly to the terminal
+func (h *HUD) Draw(scr uv.Screen, area uv.Rectangle) {
+	ctx := screen.NewContext(scr)
 
 	// Light mode always shows its indicator
-	if viewState.LightMode {
-		lightMsg := fmt.Sprintf("%s%s%s ◉ LIGHT MODE - Move mouse to position, click to set, Esc to cancel %s",
-			bgBlack, bold, fgYellow, reset)
-		lightCol := max((width-60)/2, 1)
-		fmt.Print(moveTo(height, lightCol) + lightMsg)
+	if h.state.LightMode {
+		ctx.SetBackground(ansi.Black)
+		ctx.SetBold(true)
+		ctx.SetForeground(ansi.BrightYellow)
+		ctx.SetPosition(max(area.Dx()-60, 0)/2, area.Dy()-1)
+		ctx.Print(" ◉ LIGHT MODE - Move mouse to position, click to set, Esc to cancel ")
 		return
 	}
 
 	// If HUD is disabled, we're done (lines already cleared)
-	if !viewState.ShowHUD {
+	if !h.state.ShowHUD {
 		return
 	}
 
 	// Top left: FPS
-	fpsStr := fmt.Sprintf("%s%s%s %.0f FPS %s", moveTo(1, 1), bgBlack, fgGreen, h.fps, reset)
-	fmt.Print(fpsStr)
+	ctx = screen.NewContext(scr)
+	ctx.SetPosition(0, 0)
+	ctx.SetBackground(ansi.Black)
+	ctx.SetForeground(ansi.BrightGreen)
+	ctx.Printf(" %.0f FPS ", h.fps)
 
 	// Top middle: filename
-	titleStr := fmt.Sprintf("%s%s%s %s %s", bold, bgBlack, fgWhite, h.filename, reset)
-	titleCol := max((width-len(h.filename)-2)/2, 1)
-	fmt.Print(moveTo(1, titleCol) + titleStr)
+	ctx = screen.NewContext(scr)
+	ctx.SetBold(true)
+	ctx.SetBackground(ansi.Black)
+	ctx.SetForeground(ansi.BrightWhite)
+	ctx.SetPosition(max((area.Dx()-len(h.filename)-2)/2, 0), 0)
+	ctx.Printf(" %s ", h.filename)
 
 	// Top right: polygon count
-	polyStr := fmt.Sprintf("%s%s%s %d polys %s", bgBlack, fgCyan, bold, h.polyCount, reset)
-	polyCol := max(width-12, 1)
-	fmt.Print(moveTo(1, polyCol) + polyStr)
+	ctx = screen.NewContext(scr)
+	ctx.SetBackground(ansi.Black)
+	ctx.SetForeground(ansi.BrightCyan)
+	ctx.SetBold(true)
+	ctx.SetPosition(max(area.Dx()-12, 0), 0)
+	ctx.Printf(" %d polys ", h.polyCount)
 
 	// Bottom: mode checkboxes and hint
 	checkTex := "[ ]"
-	if viewState.TextureEnabled && viewState.RenderMode != RenderModeWireframe {
+	if h.state.TextureEnabled && h.state.RenderMode != RenderModeWireframe {
 		checkTex = "[✓]"
 	}
 	checkWire := "[ ]"
-	if viewState.RenderMode == RenderModeWireframe {
+	if h.state.RenderMode == RenderModeWireframe {
 		checkWire = "[✓]"
 	}
 
 	// Bottom: Mode checkboxes and hint
-	modeStr := fmt.Sprintf("%s%s %s Texture  %s X-Ray (wireframe) %s",
-		bgBlack, fgWhite, checkTex, checkWire, reset)
-	fmt.Print(moveTo(height, 1) + modeStr)
+	ctx = screen.NewContext(scr)
+	ctx.SetBackground(ansi.Black)
+	ctx.SetForeground(ansi.BrightWhite)
+	ctx.SetPosition(0, area.Dy()-1)
+	ctx.Printf(" %s Texture  %s X-Ray (wireframe) ", checkTex, checkWire)
 
 	// Light hint (right side of bottom)
-	hint := fmt.Sprintf("%s%s%s L: position light %s", bgBlack, dim, fgYellow, reset)
-	hintCol := max(width-18, 1)
-	fmt.Print(moveTo(height, hintCol) + hint)
+	ctx = screen.NewContext(scr)
+	ctx.SetBackground(ansi.Black)
+	ctx.SetFaint(true)
+	ctx.SetForeground(ansi.BrightYellow)
+	ctx.SetPosition(max(area.Dx()-18, 0), area.Dy()-1)
+	ctx.Printf(" L: position light ")
 }
 
 // ScreenToLightDir converts a screen position to a light direction.
@@ -373,34 +372,28 @@ func (v *ViewState) ScreenToLightDir(screenX, screenY, width, height int) math3d
 	return math3d.V3(nx, -ny, nz).Normalize()
 }
 
-func run(modelPath string) error {
+func run(modelPath string) (err error) {
 	// Parse background color
 	var bgR, bgG, bgB uint8 = 30, 30, 40
 	fmt.Sscanf(bgColor, "%d,%d,%d", &bgR, &bgG, &bgB)
 
 	// Create terminal
 	term := uv.DefaultTerminal()
-
-	width, height, err := term.GetSize()
-	if err != nil {
-		return fmt.Errorf("get terminal size: %w", err)
-	}
+	scr := term.Screen()
+	scrBounds := scr.Bounds()
 
 	if err := term.Start(); err != nil {
 		return fmt.Errorf("start terminal: %w", err)
 	}
 
-	term.EnterAltScreen()
-	term.HideCursor()
-	term.Resize(width, height)
+	scr.EnterAltScreen()
+	scr.HideCursor()
 
 	// Enable mouse mode
-	fmt.Fprint(os.Stdout, "\x1b[?1003h") // Enable any-event mouse tracking
-	fmt.Fprint(os.Stdout, "\x1b[?1006h") // Enable SGR extended mouse mode
+	scr.SetMouseMode(uv.MouseModeMotion)
 
 	// Create renderer
-	termRenderer := render.NewTerminalRenderer(term, width, height)
-	fbWidth, fbHeight := termRenderer.FramebufferSize()
+	fbWidth, fbHeight := scrBounds.Dx(), scrBounds.Dy()*2
 	fb := render.NewFramebuffer(fbWidth, fbHeight)
 
 	// Create camera
@@ -459,8 +452,12 @@ func run(modelPath string) error {
 
 	fmt.Printf("Loaded: %s (%d vertices, %d triangles)\n", filepath.Base(modelPath), mesh.VertexCount(), mesh.TriangleCount())
 
+	// Initialize rotation and view state
+	rotation := NewRotationState(targetFPS)
+	viewState := NewViewState()
+
 	// Create HUD
-	hud := NewHUD(filepath.Base(modelPath), mesh.TriangleCount())
+	hud := NewHUD(filepath.Base(modelPath), mesh.TriangleCount(), viewState)
 
 	// Center and scale model
 	mesh.CalculateBounds()
@@ -472,10 +469,6 @@ func run(modelPath string) error {
 		transform := math3d.Scale(math3d.V3(scale, scale, scale)).Mul(math3d.Translate(center.Scale(-1)))
 		mesh.Transform(transform)
 	}
-
-	// Initialize rotation and view state
-	rotation := NewRotationState(targetFPS)
-	viewState := NewViewState()
 
 	// Context for clean shutdown
 	ctx, cancel := context.WithCancel(context.Background())
@@ -502,14 +495,12 @@ func run(modelPath string) error {
 		for ev := range term.Events() {
 			switch ev := ev.(type) {
 			case uv.WindowSizeEvent:
-				width, height = ev.Width, ev.Height
-				term.Erase()
-				term.Resize(width, height)
-				termRenderer = render.NewTerminalRenderer(term, width, height)
-				fbWidth, fbHeight = termRenderer.FramebufferSize()
+				scr.Resize(ev.Width, ev.Height)
+				scrBounds = scr.Bounds()
+				fbWidth, fbHeight = scrBounds.Dx(), scrBounds.Dy()*2
 				fb = render.NewFramebuffer(fbWidth, fbHeight)
 				rasterizer = render.NewRasterizer(camera, fb)
-				camera.SetAspectRatio(float64(fbWidth) / float64(fbHeight))
+				camera.SetAspectRatio(float64(fb.Width) / float64(fb.Height))
 
 			case uv.KeyPressEvent:
 				switch {
@@ -603,7 +594,7 @@ func run(modelPath string) error {
 			case uv.MouseMotionEvent:
 				if viewState.LightMode {
 					// Update pending light direction based on mouse position
-					viewState.PendingLight = viewState.ScreenToLightDir(ev.X, ev.Y, width, height)
+					viewState.PendingLight = viewState.ScreenToLightDir(ev.X, ev.Y, scrBounds.Dx(), scrBounds.Dy())
 				} else if mouseDown {
 					dx := ev.X - lastMouseX
 					dy := ev.Y - lastMouseY
@@ -634,11 +625,9 @@ func run(modelPath string) error {
 	lastFrame := time.Now()
 
 	cleanup := func() {
-		fmt.Fprint(os.Stdout, "\x1b[?1003l")
-		fmt.Fprint(os.Stdout, "\x1b[?1006l")
-		term.ExitAltScreen()
-		term.ShowCursor()
-		term.Shutdown(context.Background())
+		// This will reset the terminal to normal state
+		// i.e. mouse off, exit alt screen, show cursor
+		_ = term.Stop()
 	}
 
 	for {
@@ -706,15 +695,17 @@ func run(modelPath string) error {
 		}
 
 		// Display
-		termRenderer.Render(fb)
-		if err := termRenderer.Flush(); err != nil {
+		screen.Clear(scr)
+		fb.Draw(scr, scrBounds)
+		hud.Draw(scr, scrBounds)
+		scr.Render()
+		if err := scr.Flush(); err != nil {
 			cleanup()
 			return fmt.Errorf("flush: %w", err)
 		}
 
 		// HUD overlay (always update FPS, render clears lines when HUD off)
 		hud.UpdateFPS()
-		hud.Render(width, height, viewState)
 
 		// Frame timing
 		elapsed := time.Since(now)
