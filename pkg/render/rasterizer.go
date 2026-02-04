@@ -22,15 +22,13 @@ type Triangle struct {
 
 // Rasterizer handles software triangle rasterization.
 type Rasterizer struct {
-	camera                *Camera
-	fb                    *Framebuffer
-	zbuffer               []float64 // Depth buffer (1D array, row-major)
-	width                 int
-	height                int
-	frustum               Frustum      // Cached frustum planes
-	frustumDirty          bool         // Whether frustum needs recalculation
-	CullingStats          CullingStats // Statistics for debugging/benchmarking
-	DisableBackfaceCulling bool        // If true, render both sides of triangles
+	camera                 *Camera
+	fb                     *Framebuffer
+	zbuffer                []float64    // Depth buffer (1D array, row-major)
+	frustum                Frustum      // Cached frustum planes
+	frustumDirty           bool         // Whether frustum needs recalculation
+	CullingStats           CullingStats // Statistics for debugging/benchmarking
+	DisableBackfaceCulling bool         // If true, render both sides of triangles
 }
 
 // CullingStats tracks frustum culling performance.
@@ -42,15 +40,38 @@ type CullingStats struct {
 
 // NewRasterizer creates a new rasterizer.
 func NewRasterizer(camera *Camera, fb *Framebuffer) *Rasterizer {
-	w, h := fb.Width, fb.Height
-	return &Rasterizer{
+	r := &Rasterizer{
 		camera:       camera,
 		fb:           fb,
-		zbuffer:      make([]float64, w*h),
-		width:        w,
-		height:       h,
 		frustumDirty: true,
 	}
+	r.Resize()
+	return r
+}
+
+// Resize resizes the rasterizer's buffer to match the framebuffer.
+func (r *Rasterizer) Resize() {
+	if r.fb == nil {
+		r.zbuffer = nil
+		return
+	}
+	r.zbuffer = make([]float64, r.fb.Width*r.fb.Height)
+}
+
+// Width returns the framebuffer width.
+func (r *Rasterizer) Width() int {
+	if r.fb == nil {
+		return 0
+	}
+	return r.fb.Width
+}
+
+// Height returns the framebuffer height.
+func (r *Rasterizer) Height() int {
+	if r.fb == nil {
+		return 0
+	}
+	return r.fb.Height
 }
 
 // ClearDepth clears the Z-buffer (call before each frame).
@@ -105,18 +126,18 @@ func (r *Rasterizer) IsVisibleTransformed(localBounds AABB, transform math3d.Mat
 
 // getDepth returns the depth at (x, y).
 func (r *Rasterizer) getDepth(x, y int) float64 {
-	if x < 0 || x >= r.width || y < 0 || y >= r.height {
+	if x < 0 || x >= r.Width() || y < 0 || y >= r.Height() {
 		return math.MaxFloat64
 	}
-	return r.zbuffer[y*r.width+x]
+	return r.zbuffer[y*r.Width()+x]
 }
 
 // setDepth sets the depth at (x, y).
 func (r *Rasterizer) setDepth(x, y int, z float64) {
-	if x < 0 || x >= r.width || y < 0 || y >= r.height {
+	if x < 0 || x >= r.Width() || y < 0 || y >= r.Height() {
 		return
 	}
-	r.zbuffer[y*r.width+x] = z
+	r.zbuffer[y*r.Width()+x] = z
 }
 
 // screenVertex holds a vertex transformed to screen space.
@@ -155,8 +176,8 @@ func (r *Rasterizer) DrawTriangle(tri Triangle) {
 		sv[i].W = clipPos.W
 
 		// NDC to screen coordinates
-		sv[i].X = (sv[i].X + 1) * 0.5 * float64(r.width)
-		sv[i].Y = (1 - sv[i].Y) * 0.5 * float64(r.height) // Y flipped
+		sv[i].X = (sv[i].X + 1) * 0.5 * float64(r.Width())
+		sv[i].Y = (1 - sv[i].Y) * 0.5 * float64(r.Height()) // Y flipped
 
 		// Copy other attributes
 		sv[i].Color = tri.V[i].Color
@@ -179,9 +200,9 @@ func (r *Rasterizer) DrawTriangle(tri Triangle) {
 
 	// Find bounding box
 	minX := int(math.Max(0, math.Floor(min3(sv[0].X, sv[1].X, sv[2].X))))
-	maxX := int(math.Min(float64(r.width-1), math.Ceil(max3(sv[0].X, sv[1].X, sv[2].X))))
+	maxX := int(math.Min(float64(r.Width()-1), math.Ceil(max3(sv[0].X, sv[1].X, sv[2].X))))
 	minY := int(math.Max(0, math.Floor(min3(sv[0].Y, sv[1].Y, sv[2].Y))))
-	maxY := int(math.Min(float64(r.height-1), math.Ceil(max3(sv[0].Y, sv[1].Y, sv[2].Y))))
+	maxY := int(math.Min(float64(r.Height()-1), math.Ceil(max3(sv[0].Y, sv[1].Y, sv[2].Y))))
 
 	// Rasterize using barycentric coordinates
 	for y := minY; y <= maxY; y++ {
@@ -245,8 +266,8 @@ func (r *Rasterizer) DrawTriangleTextured(tri Triangle, tex *Texture, lightDir m
 		sv[i].W = clipPos.W
 
 		// NDC to screen coordinates
-		sv[i].X = (sv[i].X + 1) * 0.5 * float64(r.width)
-		sv[i].Y = (1 - sv[i].Y) * 0.5 * float64(r.height) // Y flipped
+		sv[i].X = (sv[i].X + 1) * 0.5 * float64(r.Width())
+		sv[i].Y = (1 - sv[i].Y) * 0.5 * float64(r.Height()) // Y flipped
 
 		// Copy other attributes
 		sv[i].Color = tri.V[i].Color
@@ -276,9 +297,9 @@ func (r *Rasterizer) DrawTriangleTextured(tri Triangle, tex *Texture, lightDir m
 
 	// Find bounding box
 	minX := int(math.Max(0, math.Floor(min3(sv[0].X, sv[1].X, sv[2].X))))
-	maxX := int(math.Min(float64(r.width-1), math.Ceil(max3(sv[0].X, sv[1].X, sv[2].X))))
+	maxX := int(math.Min(float64(r.Width()-1), math.Ceil(max3(sv[0].X, sv[1].X, sv[2].X))))
 	minY := int(math.Max(0, math.Floor(min3(sv[0].Y, sv[1].Y, sv[2].Y))))
-	maxY := int(math.Min(float64(r.height-1), math.Ceil(max3(sv[0].Y, sv[1].Y, sv[2].Y))))
+	maxY := int(math.Min(float64(r.Height()-1), math.Ceil(max3(sv[0].Y, sv[1].Y, sv[2].Y))))
 
 	// Precompute perspective-correct interpolation factors (1/w for each vertex)
 	var invW [3]float64
@@ -650,8 +671,8 @@ func (r *Rasterizer) DrawTriangleGouraud(tri Triangle, lightDir math3d.Vec3) {
 		sv[i].W = clipPos.W
 
 		// NDC to screen coordinates
-		sv[i].X = (sv[i].X + 1) * 0.5 * float64(r.width)
-		sv[i].Y = (1 - sv[i].Y) * 0.5 * float64(r.height) // Y flipped
+		sv[i].X = (sv[i].X + 1) * 0.5 * float64(r.Width())
+		sv[i].Y = (1 - sv[i].Y) * 0.5 * float64(r.Height()) // Y flipped
 
 		// Calculate per-vertex lighting intensity
 		intensity := math.Max(0, tri.V[i].Normal.Dot(normLight))
@@ -682,9 +703,9 @@ func (r *Rasterizer) DrawTriangleGouraud(tri Triangle, lightDir math3d.Vec3) {
 
 	// Find bounding box
 	minX := int(math.Max(0, math.Floor(min3(sv[0].X, sv[1].X, sv[2].X))))
-	maxX := int(math.Min(float64(r.width-1), math.Ceil(max3(sv[0].X, sv[1].X, sv[2].X))))
+	maxX := int(math.Min(float64(r.Width()-1), math.Ceil(max3(sv[0].X, sv[1].X, sv[2].X))))
 	minY := int(math.Max(0, math.Floor(min3(sv[0].Y, sv[1].Y, sv[2].Y))))
-	maxY := int(math.Min(float64(r.height-1), math.Ceil(max3(sv[0].Y, sv[1].Y, sv[2].Y))))
+	maxY := int(math.Min(float64(r.Height()-1), math.Ceil(max3(sv[0].Y, sv[1].Y, sv[2].Y))))
 
 	// Rasterize using barycentric coordinates
 	for y := minY; y <= maxY; y++ {
@@ -751,8 +772,8 @@ func (r *Rasterizer) DrawTriangleTexturedGouraud(tri Triangle, tex *Texture, lig
 		sv[i].W = clipPos.W
 
 		// NDC to screen coordinates
-		sv[i].X = (sv[i].X + 1) * 0.5 * float64(r.width)
-		sv[i].Y = (1 - sv[i].Y) * 0.5 * float64(r.height) // Y flipped
+		sv[i].X = (sv[i].X + 1) * 0.5 * float64(r.Width())
+		sv[i].Y = (1 - sv[i].Y) * 0.5 * float64(r.Height()) // Y flipped
 
 		// Calculate per-vertex lighting intensity
 		intensity := math.Max(0, tri.V[i].Normal.Dot(normLight))
@@ -779,9 +800,9 @@ func (r *Rasterizer) DrawTriangleTexturedGouraud(tri Triangle, tex *Texture, lig
 
 	// Find bounding box
 	minX := int(math.Max(0, math.Floor(min3(sv[0].X, sv[1].X, sv[2].X))))
-	maxX := int(math.Min(float64(r.width-1), math.Ceil(max3(sv[0].X, sv[1].X, sv[2].X))))
+	maxX := int(math.Min(float64(r.Width()-1), math.Ceil(max3(sv[0].X, sv[1].X, sv[2].X))))
 	minY := int(math.Max(0, math.Floor(min3(sv[0].Y, sv[1].Y, sv[2].Y))))
-	maxY := int(math.Min(float64(r.height-1), math.Ceil(max3(sv[0].Y, sv[1].Y, sv[2].Y))))
+	maxY := int(math.Min(float64(r.Height()-1), math.Ceil(max3(sv[0].Y, sv[1].Y, sv[2].Y))))
 
 	// Precompute perspective-correct interpolation factors (1/w for each vertex)
 	var invW [3]float64
@@ -1148,10 +1169,10 @@ func (r *Rasterizer) drawLine3D(a, b math3d.Vec3, color Color) {
 		clipB.Y /= clipB.W
 	}
 
-	x0 := int((clipA.X + 1) * 0.5 * float64(r.width))
-	y0 := int((1 - clipA.Y) * 0.5 * float64(r.height))
-	x1 := int((clipB.X + 1) * 0.5 * float64(r.width))
-	y1 := int((1 - clipB.Y) * 0.5 * float64(r.height))
+	x0 := int((clipA.X + 1) * 0.5 * float64(r.Width()))
+	y0 := int((1 - clipA.Y) * 0.5 * float64(r.Height()))
+	x1 := int((clipB.X + 1) * 0.5 * float64(r.Width()))
+	y1 := int((1 - clipB.Y) * 0.5 * float64(r.Height()))
 
 	r.fb.DrawLine(x0, y0, x1, y1, color)
 }

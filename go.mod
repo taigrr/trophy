@@ -5,7 +5,8 @@ go 1.25.6
 require (
 	github.com/charmbracelet/fang v0.4.4
 	github.com/charmbracelet/harmonica v0.2.0
-	github.com/charmbracelet/ultraviolet v0.0.0-20260123224754-f434aada8dbd
+	github.com/charmbracelet/ultraviolet v0.0.0-20260204125241-360f9522a02e
+	github.com/charmbracelet/x/ansi v0.11.6
 	github.com/qmuntal/gltf v0.28.0
 	github.com/spf13/cobra v1.10.2
 )
@@ -13,7 +14,6 @@ require (
 require (
 	charm.land/lipgloss/v2 v2.0.0-beta.3.0.20251106193318-19329a3e8410 // indirect
 	github.com/charmbracelet/colorprofile v0.4.1 // indirect
-	github.com/charmbracelet/x/ansi v0.11.4 // indirect
 	github.com/charmbracelet/x/exp/charmtone v0.0.0-20260202112129-266036769e93 // indirect
 	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/charmbracelet/x/termios v0.1.1 // indirect

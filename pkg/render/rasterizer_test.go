@@ -105,8 +105,8 @@ func TestInterpolateColor3(t *testing.T) {
 
 func TestDrawTriangleGouraud_VertexLighting(t *testing.T) {
 	r, fb := createTestRasterizer(100, 100)
+	fb.BG = RGB(0, 0, 0)
 	r.ClearDepth()
-	fb.Clear(RGB(0, 0, 0))
 
 	// Light from z+ direction (toward camera)
 	lightDir := math3d.V3(0, 0, 1).Normalize()
@@ -145,8 +145,9 @@ func TestDrawTriangleGouraud_VertexLighting(t *testing.T) {
 
 func TestDrawTriangleGouraud_SmoothShading(t *testing.T) {
 	r, fb := createTestRasterizer(100, 100)
+	fb.BG = RGB(0, 0, 0)
 	r.ClearDepth()
-	fb.Clear(RGB(0, 0, 0))
+	fb.Clear()
 
 	// Light from the front (camera direction)
 	lightDir := math3d.V3(0, 0, 1).Normalize()
@@ -180,8 +181,9 @@ func TestDrawTriangleGouraud_SmoothShading(t *testing.T) {
 
 func TestDrawMeshGouraud(t *testing.T) {
 	r, fb := createTestRasterizer(100, 100)
+	fb.BG = RGB(0, 0, 0)
 	r.ClearDepth()
-	fb.Clear(RGB(0, 0, 0))
+	fb.Clear()
 
 	// Create a simple mesh (quad made of 2 triangles) with smooth normals
 	// Using CW winding for front-facing triangles
@@ -230,12 +232,14 @@ func TestDrawMeshGouraud_SmoothVsFlat(t *testing.T) {
 
 	// Create two rasterizers
 	rGouraud, fbGouraud := createTestRasterizer(50, 50)
+	fbGouraud.BG = RGB(0, 0, 0)
 	rFlat, fbFlat := createTestRasterizer(50, 50)
+	fbFlat.BG = RGB(0, 0, 0)
 
 	rGouraud.ClearDepth()
 	rFlat.ClearDepth()
-	fbGouraud.Clear(RGB(0, 0, 0))
-	fbFlat.Clear(RGB(0, 0, 0))
+	fbGouraud.Clear()
+	fbFlat.Clear()
 
 	// Create a mesh with varying normals, CW winding for front-facing
 	mesh := &mockMesh{
@@ -296,8 +300,9 @@ func TestDrawMeshGouraud_SmoothVsFlat(t *testing.T) {
 
 func TestDrawTriangleGouraud_BackfaceCulling(t *testing.T) {
 	r, fb := createTestRasterizer(100, 100)
+	fb.BG = RGB(0, 0, 0)
 	r.ClearDepth()
-	fb.Clear(RGB(0, 0, 0))
+	fb.Clear()
 
 	// Back-facing triangle: CCW winding (opposite of front-facing CW)
 	// This should be culled
@@ -330,8 +335,9 @@ func TestDrawTriangleGouraud_BackfaceCulling(t *testing.T) {
 
 func TestDrawTransformedCubeGouraud(t *testing.T) {
 	r, fb := createTestRasterizer(100, 100)
+	fb.BG = RGB(0, 0, 0)
 	r.ClearDepth()
-	fb.Clear(RGB(0, 0, 0))
+	fb.Clear()
 
 	// Position cube in front of camera
 	transform := math3d.Translate(math3d.V3(0, 0, -3))
@@ -357,8 +363,9 @@ func TestDrawTransformedCubeGouraud(t *testing.T) {
 
 func TestDrawTriangleTexturedGouraud(t *testing.T) {
 	r, fb := createTestRasterizer(100, 100)
+	fb.BG = RGB(0, 0, 0)
 	r.ClearDepth()
-	fb.Clear(RGB(0, 0, 0))
+	fb.Clear()
 
 	// Create a simple 2x2 texture
 	tex := NewTexture(2, 2)
@@ -397,8 +404,9 @@ func TestDrawTriangleTexturedGouraud(t *testing.T) {
 
 func TestDrawMeshTexturedGouraud(t *testing.T) {
 	r, fb := createTestRasterizer(100, 100)
+	fb.BG = RGB(0, 0, 0)
 	r.ClearDepth()
-	fb.Clear(RGB(0, 0, 0))
+	fb.Clear()
 
 	// Create a simple 4x4 checkerboard texture
 	tex := NewTexture(4, 4)

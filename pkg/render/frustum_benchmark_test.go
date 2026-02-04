@@ -140,6 +140,7 @@ func BenchmarkCullingScenario(b *testing.B) {
 func BenchmarkMeshRenderingComparison(b *testing.B) {
 	// Create a simple framebuffer and rasterizer
 	fb := NewFramebuffer(160, 120)
+	fb.BG = RGB(0, 0, 0)
 	cam := NewCamera()
 	cam.SetPosition(math3d.V3(0, 10, 20))
 	cam.LookAt(math3d.V3(0, 0, 0))
@@ -199,7 +200,7 @@ func BenchmarkMeshRenderingComparison(b *testing.B) {
 	b.Run("with_culling", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			rast.ClearDepth()
-			fb.Clear(RGB(0, 0, 0))
+			fb.Clear()
 			rast.InvalidateFrustum()
 			rast.ResetCullingStats()
 
@@ -212,7 +213,7 @@ func BenchmarkMeshRenderingComparison(b *testing.B) {
 	b.Run("without_culling", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			rast.ClearDepth()
-			fb.Clear(RGB(0, 0, 0))
+			fb.Clear()
 
 			for _, transform := range transforms {
 				rast.DrawMeshGouraud(mesh, transform, color, lightDir)
