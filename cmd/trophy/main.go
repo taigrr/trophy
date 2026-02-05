@@ -346,7 +346,7 @@ func (h *HUD) Draw(scr uv.Screen, area uv.Rectangle) {
 	ctx.SetBackground(ansi.Black)
 	ctx.SetFaint(true)
 	ctx.SetForeground(ansi.BrightYellow)
-	ctx.SetPosition(max(area.Dx()-18, 0), area.Dy()-1)
+	ctx.SetPosition(max(area.Dx()-19, 0), area.Dy()-1)
 	ctx.Printf(" L: position light ")
 }
 
