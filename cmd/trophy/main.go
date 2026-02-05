@@ -285,10 +285,10 @@ func (h *HUD) UpdateFPS() {
 // Draw draws the HUD overlay directly to the terminal
 func (h *HUD) Draw(scr uv.Screen, area uv.Rectangle) {
 	ctx := screen.NewContext(scr)
+	ctx.SetBackground(ansi.Black)
 
 	// Light mode always shows its indicator
 	if h.state.LightMode {
-		ctx.SetBackground(ansi.Black)
 		ctx.SetBold(true)
 		ctx.SetForeground(ansi.BrightYellow)
 		ctx.SetPosition(max(area.Dx()-60, 0)/2, area.Dy()-1)
@@ -302,25 +302,19 @@ func (h *HUD) Draw(scr uv.Screen, area uv.Rectangle) {
 	}
 
 	// Top left: FPS
-	ctx = screen.NewContext(scr)
-	ctx.SetPosition(0, 0)
-	ctx.SetBackground(ansi.Black)
+	ctx.SetBold(false)
 	ctx.SetForeground(ansi.BrightGreen)
+	ctx.SetPosition(0, 0)
 	ctx.Printf(" %.0f FPS ", h.fps)
 
 	// Top middle: filename
-	ctx = screen.NewContext(scr)
 	ctx.SetBold(true)
-	ctx.SetBackground(ansi.Black)
 	ctx.SetForeground(ansi.BrightWhite)
 	ctx.SetPosition(max((area.Dx()-len(h.filename)-2)/2, 0), 0)
 	ctx.Printf(" %s ", h.filename)
 
 	// Top right: polygon count
-	ctx = screen.NewContext(scr)
-	ctx.SetBackground(ansi.Black)
 	ctx.SetForeground(ansi.BrightCyan)
-	ctx.SetBold(true)
 	ctx.SetPosition(max(area.Dx()-12, 0), 0)
 	ctx.Printf(" %d polys ", h.polyCount)
 
@@ -335,15 +329,12 @@ func (h *HUD) Draw(scr uv.Screen, area uv.Rectangle) {
 	}
 
 	// Bottom: Mode checkboxes and hint
-	ctx = screen.NewContext(scr)
-	ctx.SetBackground(ansi.Black)
+	ctx.SetBold(false)
 	ctx.SetForeground(ansi.BrightWhite)
 	ctx.SetPosition(0, area.Dy()-1)
 	ctx.Printf(" %s Texture  %s X-Ray (wireframe) ", checkTex, checkWire)
 
 	// Light hint (right side of bottom)
-	ctx = screen.NewContext(scr)
-	ctx.SetBackground(ansi.Black)
 	ctx.SetFaint(true)
 	ctx.SetForeground(ansi.BrightYellow)
 	ctx.SetPosition(max(area.Dx()-19, 0), area.Dy()-1)
@@ -397,13 +388,12 @@ func run(modelPath string) (err error) {
 	scr.SetMouseMode(uv.MouseModeMotion)
 
 	// Create renderer
-	fbWidth, fbHeight := scrBounds.Dx(), scrBounds.Dy()*2
-	fb := render.NewFramebuffer(fbWidth, fbHeight)
+	fb := render.NewFramebuffer(scrBounds.Dx(), scrBounds.Dy()*2)
 	fb.BG = bg
 
 	// Create camera
 	camera := render.NewCamera()
-	camera.SetAspectRatio(float64(fbWidth) / float64(fbHeight))
+	camera.SetAspectRatio(float64(fb.Width) / float64(fb.Height))
 	camera.SetFOV(math.Pi / 3)
 	camera.SetClipPlanes(0.1, 100)
 	camera.SetPosition(math3d.V3(0, 0, 5))
@@ -502,10 +492,9 @@ func run(modelPath string) (err error) {
 			case uv.WindowSizeEvent:
 				scr.Resize(ev.Width, ev.Height)
 				scrBounds = scr.Bounds()
-				fbWidth, fbHeight = scrBounds.Dx(), scrBounds.Dy()*2
-				fb.Resize(fbWidth, fbHeight)
+				fb.Resize(scrBounds.Dx(), scrBounds.Dy()*2)
 				rasterizer.Resize()
-				camera.SetAspectRatio(float64(fbWidth) / float64(fbHeight))
+				camera.SetAspectRatio(float64(fb.Width) / float64(fb.Height))
 
 			case uv.KeyPressEvent:
 				switch {

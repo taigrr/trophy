@@ -5,7 +5,7 @@ go 1.25.6
 require (
 	github.com/charmbracelet/fang v0.4.4
 	github.com/charmbracelet/harmonica v0.2.0
-	github.com/charmbracelet/ultraviolet v0.0.0-20260204125241-360f9522a02e
+	github.com/charmbracelet/ultraviolet v0.0.0-20260205112326-b2fd99bd4114
 	github.com/charmbracelet/x/ansi v0.11.6
 	github.com/qmuntal/gltf v0.28.0
 	github.com/spf13/cobra v1.10.2
