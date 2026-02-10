@@ -6,46 +6,41 @@ import (
 	uv "github.com/charmbracelet/ultraviolet"
 )
 
-// TerminalRenderer converts a Framebuffer to Ultraviolet cells.
-// It uses half-block characters (▀) to achieve 2x vertical resolution.
-type TerminalRenderer struct {
-	term   *uv.Terminal
-	width  int // Terminal columns
-	height int // Terminal rows
-}
-
-// NewTerminalRenderer creates a renderer for the given terminal.
-func NewTerminalRenderer(term *uv.Terminal, width, height int) *TerminalRenderer {
-	return &TerminalRenderer{
-		term:   term,
-		width:  width,
-		height: height,
-	}
-}
-
-// Render converts the framebuffer to terminal cells and displays them.
+// Draw converts the internal framebuffer to terminal cells and draws them on
+// the screen.
 // The framebuffer height should be 2x the terminal height.
-func (r *TerminalRenderer) Render(fb *Framebuffer) {
+func (r *Framebuffer) Draw(scr uv.Screen, area uv.Rectangle) {
 	// Each terminal row represents 2 framebuffer rows
 	// We use ▀ (upper half block) with fg=top color and bg=bottom color
 
-	for row := 0; row < r.height; row++ {
+	for row := area.Min.Y; row < area.Max.Y; row++ {
 		topY := row * 2
 		botY := topY + 1
 
-		for col := 0; col < r.width && col < fb.Width; col++ {
-			topColor := fb.GetPixel(col, topY)
-			botColor := fb.GetPixel(col, botY)
+		for col := area.Min.X; col < area.Max.X && col < r.Width; col++ {
+			topColor := r.GetPixel(col, topY)
+			botColor := r.GetPixel(col, botY)
+			fg, bg := rgbaToColor(topColor), rgbaToColor(botColor)
+
+			content := "▀"
+			if fg == nil && bg == nil {
+				content = " "
+			} else if fg == nil {
+				// Only bottom color
+				content = "▄"
+				fg = bg
+				bg = nil
+			}
 
 			cell := &uv.Cell{
-				Content: "▀",
+				Content: content,
 				Width:   1,
 				Style: uv.Style{
-					Fg: rgbaToColor(topColor),
-					Bg: rgbaToColor(botColor),
+					Fg: fg,
+					Bg: bg,
 				},
 			}
-			r.term.SetCell(col, row, cell)
+			scr.SetCell(col, row, cell)
 		}
 	}
 }
@@ -56,17 +51,6 @@ func rgbaToColor(c color.RGBA) color.Color {
 		return nil // Transparent = no color
 	}
 	return c
-}
-
-// Flush sends the rendered content to the terminal.
-func (r *TerminalRenderer) Flush() error {
-	return r.term.Display()
-}
-
-// FramebufferSize returns the recommended framebuffer size for the terminal.
-// Height is 2x terminal rows for half-block rendering.
-func (r *TerminalRenderer) FramebufferSize() (width, height int) {
-	return r.width, r.height * 2
 }
 
 // Color is an alias for color.RGBA for convenience.

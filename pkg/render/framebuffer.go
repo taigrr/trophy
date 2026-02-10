@@ -14,22 +14,28 @@ type Framebuffer struct {
 	Width  int          // Width in "pixels" (same as terminal columns)
 	Height int          // Height in "pixels" (2x terminal rows due to half-blocks)
 	Pixels []color.RGBA // Row-major pixel data
+	BG     color.RGBA   // Background color for transparent pixels
 }
 
 // NewFramebuffer creates a new framebuffer with the given dimensions.
 // Height should be 2x the desired terminal rows for half-block rendering.
 func NewFramebuffer(width, height int) *Framebuffer {
-	return &Framebuffer{
-		Width:  width,
-		Height: height,
-		Pixels: make([]color.RGBA, width*height),
-	}
+	fb := &Framebuffer{}
+	fb.Resize(width, height)
+	return fb
+}
+
+// Resize changes the size of the framebuffer, reallocating pixel data.
+func (fb *Framebuffer) Resize(width, height int) {
+	fb.Width = width
+	fb.Height = height
+	fb.Pixels = make([]color.RGBA, width*height)
 }
 
 // Clear fills the framebuffer with a solid color.
-func (fb *Framebuffer) Clear(c color.RGBA) {
+func (fb *Framebuffer) Clear() {
 	for i := range fb.Pixels {
-		fb.Pixels[i] = c
+		fb.Pixels[i] = fb.BG
 	}
 }
 

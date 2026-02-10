@@ -48,8 +48,8 @@ func (r *Rasterizer) DrawTriangleGouraudOpt(tri Triangle, lightDir math3d.Vec3) 
 		sv[i].W = clipPos.W
 
 		// NDC to screen coordinates
-		sv[i].X = (sv[i].X + 1) * 0.5 * float64(r.width)
-		sv[i].Y = (1 - sv[i].Y) * 0.5 * float64(r.height)
+		sv[i].X = (sv[i].X + 1) * 0.5 * float64(r.Width())
+		sv[i].Y = (1 - sv[i].Y) * 0.5 * float64(r.Height())
 
 		// Per-vertex lighting
 		intensity := math.Max(0, tri.V[i].Normal.Dot(normLight))
@@ -78,9 +78,9 @@ func (r *Rasterizer) DrawTriangleGouraudOpt(tri Triangle, lightDir math3d.Vec3) 
 
 	// Bounding box (clamped to screen)
 	minX := int(math.Max(0, math.Floor(min3(sv[0].X, sv[1].X, sv[2].X))))
-	maxX := int(math.Min(float64(r.width-1), math.Ceil(max3(sv[0].X, sv[1].X, sv[2].X))))
+	maxX := int(math.Min(float64(r.Width()-1), math.Ceil(max3(sv[0].X, sv[1].X, sv[2].X))))
 	minY := int(math.Max(0, math.Floor(min3(sv[0].Y, sv[1].Y, sv[2].Y))))
-	maxY := int(math.Min(float64(r.height-1), math.Ceil(max3(sv[0].Y, sv[1].Y, sv[2].Y))))
+	maxY := int(math.Min(float64(r.Height()-1), math.Ceil(max3(sv[0].Y, sv[1].Y, sv[2].Y))))
 
 	if minX > maxX || minY > maxY {
 		return
@@ -117,7 +117,7 @@ func (r *Rasterizer) DrawTriangleGouraudOpt(tri Triangle, lightDir math3d.Vec3) 
 	w1Row := edgeFunc(A1, B1, C1, px, py)
 	w2Row := edgeFunc(A2, B2, C2, px, py)
 
-	width := r.width
+	width := r.Width()
 	zbuffer := r.zbuffer
 	fb := r.fb
 
@@ -222,8 +222,8 @@ func (r *Rasterizer) DrawTriangleTexturedOpt(tri Triangle, tex *Texture, lightDi
 		}
 		sv[i].W = clipPos.W
 
-		sv[i].X = (sv[i].X + 1) * 0.5 * float64(r.width)
-		sv[i].Y = (1 - sv[i].Y) * 0.5 * float64(r.height)
+		sv[i].X = (sv[i].X + 1) * 0.5 * float64(r.Width())
+		sv[i].Y = (1 - sv[i].Y) * 0.5 * float64(r.Height())
 		sv[i].UV = tri.V[i].UV
 
 		// Per-vertex lighting (Gouraud)
@@ -246,9 +246,9 @@ func (r *Rasterizer) DrawTriangleTexturedOpt(tri Triangle, tex *Texture, lightDi
 	}
 
 	minX := int(math.Max(0, math.Floor(min3(sv[0].X, sv[1].X, sv[2].X))))
-	maxX := int(math.Min(float64(r.width-1), math.Ceil(max3(sv[0].X, sv[1].X, sv[2].X))))
+	maxX := int(math.Min(float64(r.Width()-1), math.Ceil(max3(sv[0].X, sv[1].X, sv[2].X))))
 	minY := int(math.Max(0, math.Floor(min3(sv[0].Y, sv[1].Y, sv[2].Y))))
-	maxY := int(math.Min(float64(r.height-1), math.Ceil(max3(sv[0].Y, sv[1].Y, sv[2].Y))))
+	maxY := int(math.Min(float64(r.Height()-1), math.Ceil(max3(sv[0].Y, sv[1].Y, sv[2].Y))))
 
 	if minX > maxX || minY > maxY {
 		return
@@ -280,7 +280,7 @@ func (r *Rasterizer) DrawTriangleTexturedOpt(tri Triangle, tex *Texture, lightDi
 	w1Row := edgeFunc(A1, B1, C1, px, py)
 	w2Row := edgeFunc(A2, B2, C2, px, py)
 
-	width := r.width
+	width := r.Width()
 	zbuffer := r.zbuffer
 	fb := r.fb
 
@@ -299,7 +299,7 @@ func (r *Rasterizer) DrawTriangleTexturedOpt(tri Triangle, tex *Texture, lightDi
 				z := bc0*sv[0].Z + bc1*sv[1].Z + bc2*sv[2].Z
 
 				idx := rowOffset + x
-				if z < zbuffer[idx] {
+				if idx < len(zbuffer) && z < zbuffer[idx] {
 					// Perspective-correct interpolation
 					pw0 := bc0 * invW[0]
 					pw1 := bc1 * invW[1]
