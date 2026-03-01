@@ -94,10 +94,7 @@ func isBinarySTL(data []byte) bool {
 		// Check if triangle count matches file size
 		triCount := binary.LittleEndian.Uint32(data[80:84])
 		expectedSize := 84 + triCount*50
-		if uint32(len(data)) == expectedSize {
-			return true
-		}
-		return false
+		return uint32(len(data)) == expectedSize
 	}
 
 	return true
