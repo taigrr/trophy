@@ -20,6 +20,10 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Run tests
+        run: go test -race ./...
+
+
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
