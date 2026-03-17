@@ -163,7 +163,7 @@ func TestVec3ScaleByZero(t *testing.T) {
 	}
 }
 
-func _ (t *testing.T) {
+func _(t *testing.T) {
 	// Distance is symmetric
 	a, b := V3(1, 2, 3), V3(4, 5, 6)
 	_ = math.Abs(a.Distance(b) - b.Distance(a))
