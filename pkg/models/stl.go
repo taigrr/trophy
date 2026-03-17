@@ -17,10 +17,10 @@ import (
 // STLLoader loads STL (stereolithography) files in both ASCII and binary formats.
 type STLLoader struct {
 	// Options
-	SmoothNormals   bool    // If true, average normals per-vertex for smooth shading
-	NoDedupe        bool    // If true, don't deduplicate vertices (each triangle gets its own)
-	CleanMesh       bool    // If true, clean mesh after loading (remove degenerate/duplicate/internal faces)
-	MergeTolerance  float64 // Tolerance for vertex merging (default 1e-6, 0 = exact match)
+	SmoothNormals  bool    // If true, average normals per-vertex for smooth shading
+	NoDedupe       bool    // If true, don't deduplicate vertices (each triangle gets its own)
+	CleanMesh      bool    // If true, clean mesh after loading (remove degenerate/duplicate/internal faces)
+	MergeTolerance float64 // Tolerance for vertex merging (default 1e-6, 0 = exact match)
 }
 
 // quantizedKey creates a hashable key from a position by quantizing to a grid.

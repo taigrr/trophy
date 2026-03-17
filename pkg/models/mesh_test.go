@@ -8,9 +8,9 @@ import (
 
 func TestFaceKey(t *testing.T) {
 	tests := []struct {
-		name     string
+		name       string
 		v0, v1, v2 int
-		want     [3]int
+		want       [3]int
 	}{
 		{"already sorted", 0, 1, 2, [3]int{0, 1, 2}},
 		{"reverse order", 2, 1, 0, [3]int{0, 1, 2}},
@@ -97,10 +97,10 @@ func TestRemoveDegenerateFaces(t *testing.T) {
 		{Position: math3d.V3(0, 0, 0)}, // duplicate of vertex 0
 	}
 	mesh.Faces = []Face{
-		{V: [3]int{0, 1, 2}},       // valid face
-		{V: [3]int{0, 0, 1}},       // degenerate: duplicate vertex index
-		{V: [3]int{0, 1, 0}},       // degenerate: duplicate vertex index
-		{V: [3]int{0, 3, 1}},       // nearly degenerate: vertices 0 and 3 are at same position (collinear)
+		{V: [3]int{0, 1, 2}}, // valid face
+		{V: [3]int{0, 0, 1}}, // degenerate: duplicate vertex index
+		{V: [3]int{0, 1, 0}}, // degenerate: duplicate vertex index
+		{V: [3]int{0, 3, 1}}, // nearly degenerate: vertices 0 and 3 are at same position (collinear)
 	}
 
 	removed := mesh.RemoveDegenerateFaces()
