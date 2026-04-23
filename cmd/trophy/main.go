@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -76,7 +77,7 @@ Controls:
 
 	cmd.Flags().StringVar(&texturePath, "texture", "", "Path to texture image (PNG/JPG)")
 	cmd.Flags().IntVar(&targetFPS, "fps", 60, "Target FPS")
-	cmd.Flags().StringVar(&bgColor, "bg", "", "Background color (R,G,B)")
+	cmd.Flags().StringVar(&bgColor, "bg", "", "Background color (R,G,B or #RRGGBB)")
 
 	// Add info subcommand
 	infoCmd := &cobra.Command{
@@ -364,12 +365,52 @@ func (v *ViewState) ScreenToLightDir(screenX, screenY, width, height int) math3d
 	return math3d.V3(nx, -ny, nz).Normalize()
 }
 
+func parseBackgroundColor(input string) (color.RGBA, error) {
+	value := strings.TrimSpace(input)
+	if value == "" {
+		return color.RGBA{}, nil
+	}
+
+	if strings.HasPrefix(value, "#") {
+		if len(value) != 7 {
+			return color.RGBA{}, fmt.Errorf("invalid hex color %q: expected #RRGGBB", input)
+		}
+		red, err := strconv.ParseUint(value[1:3], 16, 8)
+		if err != nil {
+			return color.RGBA{}, fmt.Errorf("invalid hex color %q: %w", input, err)
+		}
+		green, err := strconv.ParseUint(value[3:5], 16, 8)
+		if err != nil {
+			return color.RGBA{}, fmt.Errorf("invalid hex color %q: %w", input, err)
+		}
+		blue, err := strconv.ParseUint(value[5:7], 16, 8)
+		if err != nil {
+			return color.RGBA{}, fmt.Errorf("invalid hex color %q: %w", input, err)
+		}
+		return color.RGBA{R: uint8(red), G: uint8(green), B: uint8(blue), A: 255}, nil
+	}
+
+	parts := strings.Split(value, ",")
+	if len(parts) != 3 {
+		return color.RGBA{}, fmt.Errorf("invalid background color %q: expected R,G,B or #RRGGBB", input)
+	}
+
+	channels := make([]uint8, 3)
+	for index, part := range parts {
+		channel, err := strconv.ParseUint(strings.TrimSpace(part), 10, 8)
+		if err != nil {
+			return color.RGBA{}, fmt.Errorf("invalid background color %q: %w", input, err)
+		}
+		channels[index] = uint8(channel)
+	}
+
+	return color.RGBA{R: channels[0], G: channels[1], B: channels[2], A: 255}, nil
+}
+
 func run(modelPath string) (err error) {
-	// Parse background color
-	var bg color.RGBA
-	if bgColor != "" {
-		fmt.Sscanf(bgColor, "%d,%d,%d", &bg.R, &bg.G, &bg.B)
-		bg.A = 255
+	bg, err := parseBackgroundColor(bgColor)
+	if err != nil {
+		return err
 	}
 
 	// Create terminal

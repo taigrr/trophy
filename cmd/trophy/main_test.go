@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image/color"
 	"math"
 	"testing"
 
@@ -218,6 +219,39 @@ func TestScreenToLightDirSymmetry(t *testing.T) {
 	}
 	if math.Abs(left.Z-right.Z) > 0.001 {
 		t.Errorf("expected same Z: left.Z=%f, right.Z=%f", left.Z, right.Z)
+	}
+}
+
+func TestParseBackgroundColorRGB(t *testing.T) {
+	parsed, err := parseBackgroundColor("12, 34,56")
+	if err != nil {
+		t.Fatalf("parseBackgroundColor returned error: %v", err)
+	}
+
+	expected := color.RGBA{R: 12, G: 34, B: 56, A: 255}
+	if parsed != expected {
+		t.Fatalf("expected %+v, got %+v", expected, parsed)
+	}
+}
+
+func TestParseBackgroundColorHex(t *testing.T) {
+	parsed, err := parseBackgroundColor("#0A1B2C")
+	if err != nil {
+		t.Fatalf("parseBackgroundColor returned error: %v", err)
+	}
+
+	expected := color.RGBA{R: 0x0A, G: 0x1B, B: 0x2C, A: 255}
+	if parsed != expected {
+		t.Fatalf("expected %+v, got %+v", expected, parsed)
+	}
+}
+
+func TestParseBackgroundColorInvalid(t *testing.T) {
+	testCases := []string{"12,34", "12,34,999", "#12345", "#GG0000"}
+	for _, testCase := range testCases {
+		if _, err := parseBackgroundColor(testCase); err == nil {
+			t.Fatalf("expected error for %q", testCase)
+		}
 	}
 }
 
