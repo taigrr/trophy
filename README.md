@@ -24,8 +24,10 @@ go install github.com/taigrr/trophy/cmd/trophy@latest
 trophy model.glb              # View a GLB model
 trophy model.obj              # View an OBJ model
 trophy model.stl              # View an STL model
+trophy info model.glb         # Show model stats without opening the viewer
 trophy -texture tex.png model.obj  # Apply custom texture
 trophy -bg 0,0,0 model.glb    # Black background
+trophy -bg '#101820' model.glb # Hex background color
 trophy -fps 60 model.glb      # Higher framerate
 ```
 
