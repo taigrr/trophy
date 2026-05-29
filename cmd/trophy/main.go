@@ -421,6 +421,10 @@ func run(modelPath string) (err error) {
 	if err := term.Start(); err != nil {
 		return fmt.Errorf("start terminal: %w", err)
 	}
+	defer func() {
+		// Reset the terminal to normal state on every exit path.
+		_ = term.Stop()
+	}()
 
 	scr.EnterAltScreen()
 	scr.HideCursor()
@@ -512,6 +516,7 @@ func run(modelPath string) (err error) {
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigChan)
 	go func() {
 		<-sigChan
 		cancel()
@@ -659,16 +664,9 @@ func run(modelPath string) (err error) {
 	targetDuration := time.Second / time.Duration(targetFPS)
 	lastFrame := time.Now()
 
-	cleanup := func() {
-		// This will reset the terminal to normal state
-		// i.e. mouse off, exit alt screen, show cursor
-		_ = term.Stop()
-	}
-
 	for {
 		select {
 		case <-ctx.Done():
-			cleanup()
 			return nil
 		default:
 		}
@@ -735,7 +733,6 @@ func run(modelPath string) (err error) {
 		hud.Draw(scr, scrBounds)
 		scr.Render()
 		if err := scr.Flush(); err != nil {
-			cleanup()
 			return fmt.Errorf("flush: %w", err)
 		}
 
