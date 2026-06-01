@@ -557,7 +557,7 @@ func LoadGLTFWithTextures(path string) (*Mesh, map[int][]byte, error) {
 	return mesh, textures, nil
 }
 
-// LoadGLBWithTexture loads a GLB file and returns the mesh plus the first embedded texture.
+// LoadGLBWithTexture loads a GLB file and returns the mesh plus its primary base-color texture.
 // Returns (mesh, texture image, error). Texture may be nil if none embedded.
 func LoadGLBWithTexture(path string) (*Mesh, image.Image, error) {
 	mesh, textures, err := LoadGLTFWithTextures(path)
@@ -565,17 +565,38 @@ func LoadGLBWithTexture(path string) (*Mesh, image.Image, error) {
 		return nil, nil, err
 	}
 
-	// Find the first texture
-	var textureImg image.Image
-	for _, data := range textures {
-		if len(data) > 0 {
-			img, _, err := image.Decode(bytes.NewReader(data))
-			if err == nil {
-				textureImg = img
-				break
+	if textureImg := selectPrimaryGLTFTexture(mesh, textures); textureImg != nil {
+		return mesh, textureImg, nil
+	}
+
+	return mesh, nil, nil
+}
+
+func selectPrimaryGLTFTexture(mesh *Mesh, textures map[int][]byte) image.Image {
+	if mesh != nil {
+		for _, face := range mesh.Faces {
+			material := mesh.GetMaterial(face.Material)
+			if material != nil && material.HasTexture && material.BaseMap != nil {
+				return material.BaseMap
+			}
+		}
+
+		for _, material := range mesh.Materials {
+			if material.HasTexture && material.BaseMap != nil {
+				return material.BaseMap
 			}
 		}
 	}
 
-	return mesh, textureImg, nil
+	for _, data := range textures {
+		if len(data) == 0 {
+			continue
+		}
+		img, _, err := image.Decode(bytes.NewReader(data))
+		if err == nil {
+			return img
+		}
+	}
+
+	return nil
 }
