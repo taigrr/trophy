@@ -49,6 +49,8 @@ var (
 	bgColor     string
 )
 
+const minTargetFPS = 1
+
 func main() {
 	cmd := &cobra.Command{
 		Use:   "trophy <model.obj|model.glb|model.stl>",
@@ -407,7 +409,18 @@ func parseBackgroundColor(input string) (color.RGBA, error) {
 	return color.RGBA{R: channels[0], G: channels[1], B: channels[2], A: 255}, nil
 }
 
+func validateTargetFPS(fps int) error {
+	if fps < minTargetFPS {
+		return fmt.Errorf("invalid fps %d: must be at least %d", fps, minTargetFPS)
+	}
+	return nil
+}
+
 func run(modelPath string) (err error) {
+	if err := validateTargetFPS(targetFPS); err != nil {
+		return err
+	}
+
 	bg, err := parseBackgroundColor(bgColor)
 	if err != nil {
 		return err
