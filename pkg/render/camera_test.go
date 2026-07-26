@@ -15,7 +15,7 @@ func approxEqual(a, b, eps float64) bool {
 
 func TestNewCamera(t *testing.T) {
 	c := NewCamera()
-	if c.Position != (math3d.Vec3{0, 10, 0}) {
+	if c.Position != (math3d.Vec3{X: 0, Y: 10, Z: 0}) {
 		t.Fatalf("position = %v", c.Position)
 	}
 	if !approxEqual(c.FOV, math.Pi/3, epsilon) {
@@ -26,7 +26,7 @@ func TestNewCamera(t *testing.T) {
 func TestCameraSetters(t *testing.T) {
 	c := NewCamera()
 	c.SetPosition(math3d.V3(1, 2, 3))
-	if c.Position != (math3d.Vec3{1, 2, 3}) {
+	if c.Position != (math3d.Vec3{X: 1, Y: 2, Z: 3}) {
 		t.Errorf("pos = %v", c.Position)
 	}
 	c.SetRotation(0.1, 0.2, 0.3)

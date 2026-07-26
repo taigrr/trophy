@@ -2,17 +2,83 @@ package models
 
 import (
 	"bytes"
+	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
 	"path/filepath"
+	"strings"
 	"unsafe"
 
 	"github.com/qmuntal/gltf"
 	"github.com/taigrr/trophy/pkg/math3d"
 )
+
+// geometryBreakingExtensions lists required glTF extensions that change how
+// mesh geometry or accessor data is encoded. trophy cannot decode these, so a
+// file that requires one cannot produce correct geometry and must be rejected.
+// Appearance-only extensions (materials, lights, texture transforms, ...) are
+// intentionally NOT listed: the model still loads with correct geometry, just
+// approximate shading.
+var geometryBreakingExtensions = map[string]bool{
+	"KHR_draco_mesh_compression": true,
+	"EXT_meshopt_compression":    true,
+	"KHR_mesh_quantization":      true,
+	"EXT_mesh_gpu_instancing":    true,
+}
+
+// filterUnsupported returns the subset of required extensions that trophy
+// cannot handle because they alter geometry/accessor encoding.
+func filterUnsupported(required []string) []string {
+	var out []string
+	for _, e := range required {
+		if geometryBreakingExtensions[e] {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+// unsupportedRequiredExtensions parses a GLB/glTF file's extensionsRequired
+// without a full decode, used to give a clear error when gltf.Open fails.
+func unsupportedRequiredExtensions(path string) []string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+
+	var jsonChunk []byte
+	if len(data) >= 12 && binary.LittleEndian.Uint32(data[0:4]) == 0x46546C67 {
+		// GLB: skip 12-byte header, read first (JSON) chunk.
+		if len(data) < 20 {
+			return nil
+		}
+		// Verify the first chunk is the JSON chunk ("JSON").
+		if binary.LittleEndian.Uint32(data[16:20]) != 0x4E4F534A {
+			return nil
+		}
+		clen := int64(binary.LittleEndian.Uint32(data[12:16]))
+		start := int64(20)
+		end := start + clen
+		if end > int64(len(data)) {
+			return nil
+		}
+		jsonChunk = data[start:end]
+	} else {
+		jsonChunk = data
+	}
+
+	var doc struct {
+		ExtensionsRequired []string `json:"extensionsRequired"`
+	}
+	if err := json.Unmarshal(jsonChunk, &doc); err != nil {
+		return nil
+	}
+	return filterUnsupported(doc.ExtensionsRequired)
+}
 
 // GLTFLoader loads GLTF/GLB files into Mesh format.
 type GLTFLoader struct {
@@ -39,7 +105,13 @@ func LoadGLB(path string) (*Mesh, error) {
 func (l *GLTFLoader) Load(path string) (*Mesh, error) {
 	doc, err := gltf.Open(path)
 	if err != nil {
+		if exts := unsupportedRequiredExtensions(path); len(exts) > 0 {
+			return nil, fmt.Errorf("unsupported glTF extensions: %s", strings.Join(exts, ", "))
+		}
 		return nil, fmt.Errorf("open gltf: %w", err)
+	}
+	if exts := filterUnsupported(doc.ExtensionsRequired); len(exts) > 0 {
+		return nil, fmt.Errorf("unsupported glTF extensions: %s", strings.Join(exts, ", "))
 	}
 
 	mesh := NewMesh(filepath.Base(path))
@@ -521,15 +593,15 @@ func float32frombits(b uint32) float32 {
 // LoadGLTFWithTextures loads a GLTF file and extracts embedded textures.
 // Returns the mesh and a map of image index to texture data.
 func LoadGLTFWithTextures(path string) (*Mesh, map[int][]byte, error) {
-	doc, err := gltf.Open(path)
-	if err != nil {
-		return nil, nil, fmt.Errorf("open gltf: %w", err)
-	}
-
 	loader := NewGLTFLoader()
 	mesh, err := loader.Load(path)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	doc, err := gltf.Open(path)
+	if err != nil {
+		return nil, nil, fmt.Errorf("open gltf: %w", err)
 	}
 
 	// Extract textures

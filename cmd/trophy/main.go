@@ -426,40 +426,9 @@ func run(modelPath string) (err error) {
 		return err
 	}
 
-	// Create terminal
-	term := uv.DefaultTerminal()
-	scr := term.Screen()
-	scrBounds := scr.Bounds()
-
-	if err := term.Start(); err != nil {
-		return fmt.Errorf("start terminal: %w", err)
-	}
-	defer func() {
-		// Reset the terminal to normal state on every exit path.
-		_ = term.Stop()
-	}()
-
-	scr.EnterAltScreen()
-	scr.HideCursor()
-
-	// Enable mouse mode
-	scr.SetMouseMode(uv.MouseModeMotion)
-
-	// Create renderer
-	fb := render.NewFramebuffer(scrBounds.Dx(), scrBounds.Dy()*2)
-	fb.BG = bg
-
-	// Create camera
-	camera := render.NewCamera()
-	camera.SetAspectRatio(float64(fb.Width) / float64(fb.Height))
-	camera.SetFOV(math.Pi / 3)
-	camera.SetClipPlanes(0.1, 100)
-	camera.SetPosition(math3d.V3(0, 0, 5))
-	camera.LookAt(math3d.V3(0, 0, 0))
-
-	rasterizer := render.NewRasterizer(camera, fb)
-
-	// Load texture if specified
+	// Load texture if specified. Done before starting the terminal so that any
+	// load error is printed to the normal screen instead of being swallowed by
+	// the alternate screen (which looked like a hang).
 	var texture *render.Texture
 	if texturePath != "" {
 		texture, err = render.LoadTexture(texturePath)
@@ -503,7 +472,40 @@ func run(modelPath string) (err error) {
 		texture = render.NewCheckerTexture(64, 64, 8, render.RGB(200, 200, 200), render.RGB(100, 100, 100))
 	}
 
+	// Create terminal
+	term := uv.DefaultTerminal()
+	scr := term.Screen()
+	scrBounds := scr.Bounds()
+
 	fmt.Printf("Loaded: %s (%d vertices, %d triangles)\n", filepath.Base(modelPath), mesh.VertexCount(), mesh.TriangleCount())
+
+	if err := term.Start(); err != nil {
+		return fmt.Errorf("start terminal: %w", err)
+	}
+	defer func() {
+		// Reset the terminal to normal state on every exit path.
+		_ = term.Stop()
+	}()
+
+	scr.EnterAltScreen()
+	scr.HideCursor()
+
+	// Enable mouse mode
+	scr.SetMouseMode(uv.MouseModeMotion)
+
+	// Create renderer
+	fb := render.NewFramebuffer(scrBounds.Dx(), scrBounds.Dy()*2)
+	fb.BG = bg
+
+	// Create camera
+	camera := render.NewCamera()
+	camera.SetAspectRatio(float64(fb.Width) / float64(fb.Height))
+	camera.SetFOV(math.Pi / 3)
+	camera.SetClipPlanes(0.1, 100)
+	camera.SetPosition(math3d.V3(0, 0, 5))
+	camera.LookAt(math3d.V3(0, 0, 0))
+
+	rasterizer := render.NewRasterizer(camera, fb)
 
 	// Initialize rotation and view state
 	rotation := NewRotationState(targetFPS)
