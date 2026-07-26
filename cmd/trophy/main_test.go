@@ -255,6 +255,22 @@ func TestParseBackgroundColorInvalid(t *testing.T) {
 	}
 }
 
+func TestValidateTargetFPS(t *testing.T) {
+	for _, testCase := range []int{1, 30, 60, 120} {
+		if err := validateTargetFPS(testCase); err != nil {
+			t.Fatalf("validateTargetFPS(%d) returned error: %v", testCase, err)
+		}
+	}
+}
+
+func TestValidateTargetFPSInvalid(t *testing.T) {
+	for _, testCase := range []int{0, -1, -60} {
+		if err := validateTargetFPS(testCase); err == nil {
+			t.Fatalf("expected error for fps %d", testCase)
+		}
+	}
+}
+
 func TestRunInfoUnsupportedFormat(t *testing.T) {
 	err := runInfo("test.xyz")
 	if err == nil {
