@@ -129,7 +129,9 @@ func (l *GLTFLoader) Load(path string) (*Mesh, error) {
 		}
 		scene := doc.Scenes[sceneIdx]
 		for _, nodeIdx := range scene.Nodes {
-			l.processNode(doc, int(nodeIdx), math3d.Identity(), mesh, processedMeshes)
+			if err := l.processNode(doc, int(nodeIdx), math3d.Identity(), mesh, processedMeshes); err != nil {
+				return nil, fmt.Errorf("process node %d: %w", nodeIdx, err)
+			}
 		}
 	} else {
 		// No scenes defined, process all root nodes
@@ -147,7 +149,9 @@ func (l *GLTFLoader) Load(path string) (*Mesh, error) {
 				}
 			}
 			if isRoot {
-				l.processNode(doc, i, math3d.Identity(), mesh, processedMeshes)
+				if err := l.processNode(doc, i, math3d.Identity(), mesh, processedMeshes); err != nil {
+					return nil, fmt.Errorf("process node %d: %w", i, err)
+				}
 			}
 		}
 	}
@@ -175,7 +179,7 @@ func (l *GLTFLoader) Load(path string) (*Mesh, error) {
 }
 
 // processNode recursively processes a node and its children, accumulating transforms.
-func (l *GLTFLoader) processNode(doc *gltf.Document, nodeIdx int, parentTransform math3d.Mat4, mesh *Mesh, processedMeshes map[int]bool) {
+func (l *GLTFLoader) processNode(doc *gltf.Document, nodeIdx int, parentTransform math3d.Mat4, mesh *Mesh, processedMeshes map[int]bool) error {
 	node := doc.Nodes[nodeIdx]
 
 	// Build this node's local transform
@@ -215,13 +219,19 @@ func (l *GLTFLoader) processNode(doc *gltf.Document, nodeIdx int, parentTransfor
 	if node.Mesh != nil {
 		meshIdx := int(*node.Mesh)
 		gltfMesh := doc.Meshes[meshIdx]
-		l.processMeshWithTransform(doc, gltfMesh, mesh, worldTransform)
+		if err := l.processMeshWithTransform(doc, gltfMesh, mesh, worldTransform); err != nil {
+			return fmt.Errorf("process mesh %d: %w", meshIdx, err)
+		}
 		processedMeshes[meshIdx] = true
 	}
 
 	for _, childIdx := range node.Children {
-		l.processNode(doc, int(childIdx), worldTransform, mesh, processedMeshes)
+		if err := l.processNode(doc, int(childIdx), worldTransform, mesh, processedMeshes); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 // processMeshWithTransform extracts geometry from a GLTF mesh, applying the given transform.

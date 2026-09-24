@@ -1,6 +1,7 @@
 package models
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
@@ -128,6 +129,35 @@ f -3 -2 -1
 
 	if mesh.TriangleCount() != 1 {
 		t.Errorf("expected 1 triangle, got %d", mesh.TriangleCount())
+	}
+}
+
+func TestLoadOBJWithLongFaceLine(t *testing.T) {
+	const vertexCount = 15000
+
+	var objData strings.Builder
+	for i := 0; i < vertexCount; i++ {
+		objData.WriteString("v ")
+		objData.WriteString("0 ")
+		objData.WriteString("0 ")
+		objData.WriteString("0\n")
+	}
+	objData.WriteString("f")
+	for i := 1; i <= vertexCount; i++ {
+		objData.WriteString(" ")
+		objData.WriteString(strconv.Itoa(i))
+	}
+	objData.WriteString("\n")
+
+	loader := NewOBJLoader()
+	mesh, err := loader.Load(strings.NewReader(objData.String()), "long_face")
+	if err != nil {
+		t.Fatalf("failed to load OBJ with long face line: %v", err)
+	}
+
+	wantTriangles := vertexCount - 2
+	if mesh.TriangleCount() != wantTriangles {
+		t.Errorf("expected %d triangles, got %d", wantTriangles, mesh.TriangleCount())
 	}
 }
 
