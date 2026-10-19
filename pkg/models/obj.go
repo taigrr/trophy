@@ -11,6 +11,8 @@ import (
 	"github.com/taigrr/trophy/pkg/math3d"
 )
 
+const maxOBJLineSize = 16 * 1024 * 1024
+
 // OBJLoader loads Wavefront OBJ files.
 type OBJLoader struct {
 	// Options
@@ -53,6 +55,7 @@ func (l *OBJLoader) Load(r io.Reader, name string) (*Mesh, error) {
 	vertexMap := make(map[vertexKey]int)
 
 	scanner := bufio.NewScanner(r)
+	scanner.Buffer(make([]byte, 64*1024), maxOBJLineSize)
 	lineNum := 0
 
 	for scanner.Scan() {
