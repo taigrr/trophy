@@ -2,6 +2,8 @@ module github.com/taigrr/trophy
 
 go 1.26.5
 
+toolchain go1.27.3
+
 require (
 	github.com/charmbracelet/fang v1.0.0
 	github.com/charmbracelet/harmonica v0.2.0
@@ -31,7 +33,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/xo/terminfo v1.0.0 // indirect
-	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 )
