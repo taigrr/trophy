@@ -6,7 +6,7 @@ require (
 	github.com/charmbracelet/fang v1.0.0
 	github.com/charmbracelet/harmonica v0.2.0
 	github.com/charmbracelet/ultraviolet v0.0.0-20260812204455-68fa937c71be
-	github.com/charmbracelet/x/ansi v0.11.8
+	github.com/charmbracelet/x/ansi v0.11.9
 	github.com/qmuntal/gltf v0.29.0
 	github.com/spf13/cobra v1.10.2
 )
