@@ -3,6 +3,7 @@ package models
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"math"
 	"testing"
 
@@ -503,4 +504,26 @@ endsolid test`
 // Helper to check if Vec3 has non-trivial length
 func vec3LenSq(v math3d.Vec3) float64 {
 	return v.X*v.X + v.Y*v.Y + v.Z*v.Z
+}
+
+func TestSTLLoaderRejectsOverflowingTriangleCounts(t *testing.T) {
+	for _, count := range []uint32{1 << 31, math.MaxUint32} {
+		t.Run(fmt.Sprint(count), func(t *testing.T) {
+			data := make([]byte, 84)
+			binary.LittleEndian.PutUint32(data[80:], count)
+			mesh, err := NewSTLLoader().LoadBytes(data, "overflow")
+			if err == nil || mesh != nil {
+				t.Fatalf("expected truncated STL error and no mesh, got mesh=%v, err=%v", mesh, err)
+			}
+		})
+	}
+}
+
+func TestIsBinarySTLDoesNotWrapExpectedSize(t *testing.T) {
+	data := make([]byte, 84)
+	copy(data, "solid binary")
+	binary.LittleEndian.PutUint32(data[80:], 1<<31)
+	if isBinarySTL(data) {
+		t.Fatal("overflowing triangle count must not match the file size")
+	}
 }
