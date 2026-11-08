@@ -93,8 +93,8 @@ func isBinarySTL(data []byte) bool {
 		// Could still be binary if "solid" appears in header
 		// Check if triangle count matches file size
 		triCount := binary.LittleEndian.Uint32(data[80:84])
-		expectedSize := 84 + triCount*50
-		return uint32(len(data)) == expectedSize
+		expectedSize := 84 + uint64(triCount)*50
+		return uint64(len(data)) == expectedSize
 	}
 
 	return true
@@ -109,8 +109,8 @@ func (l *STLLoader) loadBinary(data []byte, name string) (*Mesh, error) {
 	// Skip 80-byte header
 	triCount := binary.LittleEndian.Uint32(data[80:84])
 
-	expectedSize := 84 + triCount*50
-	if uint32(len(data)) < expectedSize {
+	expectedSize := 84 + uint64(triCount)*50
+	if uint64(len(data)) < expectedSize {
 		return nil, fmt.Errorf("binary STL truncated: expected %d bytes, got %d", expectedSize, len(data))
 	}
 
