@@ -60,7 +60,10 @@ func (l *OBJLoader) Load(r io.Reader, name string) (*Mesh, error) {
 
 	for scanner.Scan() {
 		lineNum++
-		line := strings.TrimSpace(scanner.Text())
+		// Comments extend from # to the end of the record. Strip them
+		// before tokenizing so face comments are not parsed as indices.
+		record, _, _ := strings.Cut(scanner.Text(), "#")
+		line := strings.TrimSpace(record)
 
 		// Skip empty lines and comments
 		if len(line) == 0 || line[0] == '#' {

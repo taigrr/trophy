@@ -6,7 +6,7 @@ Terminal 3D Model Viewer - View OBJ, GLB, and STL files directly in your termina
 
 ## Features
 
-- **OBJ, GLB & STL Support** - Load standard 3D model formats
+- **OBJ, GLB & STL Support** - Load standard 3D model formats (OBJ supports full-line and inline `#` comments)
 - **Embedded Textures** - Automatically extracts and applies GLB textures
 - **Interactive Controls** - Rotate, zoom, and spin models with mouse/keyboard
 - **Software Rendering** - No GPU required, works over SSH
