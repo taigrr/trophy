@@ -179,3 +179,26 @@ func TestMeshClone(t *testing.T) {
 		t.Error("clone was affected by original modification")
 	}
 }
+
+func TestOBJInlineComments(t *testing.T) {
+	for _, comment := range []string{" # triangle", "#triangle", "\t# 4 5 6"} {
+		t.Run(comment, func(t *testing.T) {
+			data := "# header\nv 0 0 0 # origin\nv 1 0 0\nv 0 1 0\nf 1 2 3" + comment + "\n"
+			mesh, err := NewOBJLoader().Load(strings.NewReader(data), "commented")
+			if err != nil {
+				t.Fatalf("load commented triangle: %v", err)
+			}
+			if mesh.VertexCount() != 3 || mesh.TriangleCount() != 1 {
+				t.Fatalf("got %d vertices and %d triangles", mesh.VertexCount(), mesh.TriangleCount())
+			}
+		})
+	}
+}
+
+func TestOBJInlineCommentDoesNotSupplyFaceVertices(t *testing.T) {
+	data := "v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 # 3\n"
+	_, err := NewOBJLoader().Load(strings.NewReader(data), "incomplete")
+	if err == nil || !strings.Contains(err.Error(), "line 4: face needs at least 3 vertices") {
+		t.Fatalf("expected incomplete face error on line 4, got %v", err)
+	}
+}
